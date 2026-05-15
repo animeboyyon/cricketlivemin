@@ -13,8 +13,8 @@ export const getCricketHome = createServerFn({ method: "GET" }).handler(async ()
     if (!res.ok) {
       return { matches: [], error: `Upstream error ${res.status}` };
     }
-    const json = (await res.json()) as { matches?: unknown[] };
-    return { matches: json.matches ?? [], error: null as string | null };
+    const json = (await res.json()) as { matches?: MatchEntry[] };
+    return { matches: json.matches ?? [], error: null };
   } catch (e) {
     return { matches: [], error: (e as Error).message };
   }
