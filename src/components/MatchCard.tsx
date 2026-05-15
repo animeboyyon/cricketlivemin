@@ -131,6 +131,6 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
           </div>
         )}
       </footer>
-    </article>
+    </Link>
   );
 }
