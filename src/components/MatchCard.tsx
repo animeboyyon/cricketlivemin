@@ -1,4 +1,5 @@
 import type { MatchEntry } from "@/types/cricket";
+import { Link } from "@tanstack/react-router";
 import { MapPin, Trophy } from "lucide-react";
 
 function formatScore(score?: { runs: number; wickets?: number; overs?: number }) {
@@ -87,7 +88,11 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
   const t2 = score?.team2Score?.inngs2 ?? score?.team2Score?.inngs1;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-glow)]">
+    <Link
+      to="/match/$matchId"
+      params={{ matchId: String(info.matchId) }}
+      className="group relative block overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-glow)]"
+    >
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
