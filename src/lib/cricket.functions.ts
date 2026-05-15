@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { MatchEntry } from "@/types/cricket";
 
-export const getCricketHome = createServerFn({ method: "GET" }).handler(async () => {
+export const getCricketHome = createServerFn({ method: "GET" }).handler(async (): Promise<{ matches: MatchEntry[]; error: string | null }> => {
   try {
     const res = await fetch("https://www.cricbuzz.com/api/home", {
       headers: {
