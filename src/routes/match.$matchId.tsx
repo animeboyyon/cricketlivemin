@@ -266,28 +266,28 @@ function MatchDetail() {
         <section className="mt-4 sm:mt-6">
           <CombinedInningsCard
             team1Name={info.team1.teamName}
-    team1Short={info.team1.teamSName}
-    team1ImageId={info.team1.imageId}
-    team1Score={score?.team1Score}
-    team2Name={info.team2.teamName}
-    team2Short={info.team2.teamSName}
-    team2ImageId={info.team2.imageId}
-    team2Score={score?.team2Score}
+            team1Short={info.team1.teamSName}
+            team1ImageId={info.team1.imageId}
+            team1Score={score?.team1Score}
+            team2Name={info.team2.teamName}
+            team2Short={info.team2.teamSName}
+            team2ImageId={info.team2.imageId}
+            team2Score={score?.team2Score}
           />
         </section>
       ) : (
         <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
           <InningsCard
-          teamName={info.team1.teamName}
-          short={info.team1.teamSName}
-          imageId={info.team1.imageId}
-          scores={score?.team1Score}
+            teamName={info.team1.teamName}
+            short={info.team1.teamSName}
+            imageId={info.team1.imageId}
+            scores={score?.team1Score}
           />
           <InningsCard
-          teamName={info.team2.teamName}
-          short={info.team2.teamSName}
-          imageId={info.team2.imageId}
-          scores={score?.team2Score}
+            teamName={info.team2.teamName}
+            short={info.team2.teamSName}
+            imageId={info.team2.imageId}
+            scores={score?.team2Score}
           />
         </section>
       )}

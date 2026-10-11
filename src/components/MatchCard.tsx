@@ -48,6 +48,7 @@ function TeamRow({
   name,
   short,
   score,
+  imageId,
   isBatting,
 }: {
   name: string;
