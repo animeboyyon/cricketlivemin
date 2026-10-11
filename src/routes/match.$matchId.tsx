@@ -6,6 +6,7 @@ import { getMatchCenter } from "@/lib/scorecard.functions";
 import { MatchStats, MatchWorm } from "@/components/match/MatchAnalytics";
 import { LiveMatchSummary } from "@/components/match/LiveMatchSummary";
 import { Scorecard } from "@/components/match/Scorecard";
+import { TeamLogo } from "@/components/TeamLogo";
 import type { MatchEntry, Innings, TeamScore } from "@/types/cricket";
 
 export const Route = createFileRoute("/match/$matchId")({
@@ -58,19 +59,19 @@ function formatInnings(inn?: Innings) {
 function InningsCard({
   teamName,
   short,
+  imageId,
   scores,
 }: {
   teamName: string;
   short: string;
+  imageId?: number;
   scores?: TeamScore;
 }) {
   const innings = [scores?.inngs1, scores?.inngs2].filter(Boolean) as Innings[];
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="mb-3 flex items-center gap-3 sm:mb-4">
-        <div className="flex h-10 w-10 shrink-0 items-center sm:h-12 sm:w-12 justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary ring-1 ring-primary/30">
-          {short.slice(0, 3)}
-        </div>
+        <TeamLogo name={teamName} short={short} imageId={imageId} />
         <div>
           <h3 className="text-lg font-bold text-foreground">{teamName}</h3>
           <p className="text-xs text-muted-foreground">{short}</p>
@@ -102,21 +103,25 @@ function InningsCard({
 function CombinedInningsCard({
   team1Name,
   team1Short,
+  team1ImageId,
   team1Score,
   team2Name,
   team2Short,
+  team2ImageId,
   team2Score,
 }: {
   team1Name: string;
   team1Short: string;
+  team1ImageId?: number;
   team1Score?: TeamScore;
   team2Name: string;
   team2Short: string;
+  team2ImageId?: number;
   team2Score?: TeamScore;
 }) {
   const rows = [
-    { name: team1Name, short: team1Short, score: team1Score },
-    { name: team2Name, short: team2Short, score: team2Score },
+    { name: team1Name, short: team1Short, imageId: team1ImageId, score: team1Score },
+    { name: team2Name, short: team2Short, imageId: team2ImageId, score: team2Score },
   ];
 
   return (
@@ -129,9 +134,7 @@ function CombinedInningsCard({
               key={team.short}
               className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-3 sm:px-4"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary ring-1 ring-primary/30">
-                {team.short.slice(0, 3)}
-              </div>
+              <TeamLogo name={team.name} short={team.short} imageId={team.imageId} size="sm" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
@@ -263,24 +266,28 @@ function MatchDetail() {
         <section className="mt-4 sm:mt-6">
           <CombinedInningsCard
             team1Name={info.team1.teamName}
-            team1Short={info.team1.teamSName}
-            team1Score={score?.team1Score}
-            team2Name={info.team2.teamName}
-            team2Short={info.team2.teamSName}
-            team2Score={score?.team2Score}
+    team1Short={info.team1.teamSName}
+    team1ImageId={info.team1.imageId}
+    team1Score={score?.team1Score}
+    team2Name={info.team2.teamName}
+    team2Short={info.team2.teamSName}
+    team2ImageId={info.team2.imageId}
+    team2Score={score?.team2Score}
           />
         </section>
       ) : (
         <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
           <InningsCard
-            teamName={info.team1.teamName}
-            short={info.team1.teamSName}
-            scores={score?.team1Score}
+          teamName={info.team1.teamName}
+          short={info.team1.teamSName}
+          imageId={info.team1.imageId}
+          scores={score?.team1Score}
           />
           <InningsCard
-            teamName={info.team2.teamName}
-            short={info.team2.teamSName}
-            scores={score?.team2Score}
+          teamName={info.team2.teamName}
+          short={info.team2.teamSName}
+          imageId={info.team2.imageId}
+          scores={score?.team2Score}
           />
         </section>
       )}

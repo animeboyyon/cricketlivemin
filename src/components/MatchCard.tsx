@@ -1,6 +1,7 @@
 import type { MatchEntry } from "@/types/cricket";
 import { Link } from "@tanstack/react-router";
 import { MapPin, Trophy } from "lucide-react";
+import { TeamLogo } from "@/components/TeamLogo";
 
 function formatScore(score?: { runs: number; wickets?: number; overs?: number }) {
   if (!score) return null;
@@ -52,20 +53,13 @@ function TeamRow({
   name: string;
   short: string;
   score: string | null;
+  imageId?: number;
   isBatting?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-1.5">
       <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-            isBatting
-              ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-              : "bg-muted text-foreground/80"
-          }`}
-        >
-          {short.slice(0, 3)}
-        </div>
+        <TeamLogo name={name} short={short} imageId={imageId} size="sm" />
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold text-foreground">{name}</div>
           <div className="text-xs text-muted-foreground">{short}</div>
@@ -111,12 +105,14 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
           name={info.team1.teamName}
           short={info.team1.teamSName}
           score={formatScore(t1)}
+          imageId={info.team1.imageId}
         />
         <div className="h-px bg-border/50" />
         <TeamRow
           name={info.team2.teamName}
           short={info.team2.teamSName}
           score={formatScore(t2)}
+          imageId={info.team2.imageId}
         />
       </div>
 
