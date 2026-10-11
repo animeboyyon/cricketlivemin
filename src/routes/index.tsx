@@ -33,7 +33,7 @@ function Index() {
   const { data, isLoading, isFetching, refetch, error, dataUpdatedAt } = useQuery({
     queryKey: ["cricket-home"],
     queryFn: () => getCricketHome(),
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
   });
 
   const [filter, setFilter] = useState<Filter>("all");

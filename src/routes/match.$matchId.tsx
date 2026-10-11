@@ -47,7 +47,7 @@ export const Route = createFileRoute("/match/$matchId")({
 
 const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"];
 // Polling pauses automatically while the tab is hidden (react-query default).
-const LIVE_REFRESH_MS = 12_000;
+const LIVE_REFRESH_MS = 5_000;
 const IDLE_REFRESH_MS = 120_000;
 
 function formatInnings(inn?: Innings) {
@@ -322,7 +322,7 @@ function MatchDetail() {
                     }
                     aria-hidden="true"
                   />
-                  {centerFetching ? "Updating" : `Live · ${LIVE_REFRESH_MS / 1000}s`}
+                  {centerFetching ? "Updating" : "Live"}
                 </span>
               )}
             </div>
