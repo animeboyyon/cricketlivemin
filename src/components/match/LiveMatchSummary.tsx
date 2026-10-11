@@ -1,0 +1,119 @@
+import { Activity, CircleHelp } from "lucide-react";
+import type { MatchCenter } from "@/types/scorecard";
+
+function unavailable(value: string) {
+  return <span className="text-muted-foreground">{value}</span>;
+}
+
+export function LiveMatchSummary({
+  center,
+  isLive,
+  team1Label,
+  team2Label,
+}: {
+  center: MatchCenter;
+  isLive: boolean;
+  team1Label: string;
+  team2Label: string;
+}) {
+  const innings = center.innings.at(-1);
+  const batters = innings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
+  const bowler = innings?.bowlers.at(-1);
+  const hasBowler = Boolean(bowler && (bowler.overs > 0 || bowler.runs > 0 || bowler.wickets > 0));
+
+  return (
+    <section
+      aria-labelledby="live-summary-heading"
+      className="rounded-2xl border border-border bg-card/80 p-4 shadow-[var(--shadow-card)] sm:p-5"
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2
+          id="live-summary-heading"
+          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+        >
+          <Activity className="h-3.5 w-3.5 text-primary" /> Live match summary
+        </h2>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          {isLive ? "Feed data" : "Not live"}
+        </span>
+      </div>
+
+      {!isLive ? (
+        <p className="text-sm text-muted-foreground">
+          Live batter, bowler, and win probability data will appear when play is live.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-border">
+          <div className="sm:pr-5">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Current batter
+            </p>
+            {batters.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {batters.map((batter, index) => (
+                  <div key={batter.id} className="flex items-center justify-between gap-3">
+                    <span
+                      className={
+                        index === 0
+                          ? "min-w-0 truncate text-sm font-semibold text-primary"
+                          : "min-w-0 truncate text-sm text-foreground"
+                      }
+                    >
+                      {index === 0 && <span aria-label="Striker">*</span>}
+                      {batter.name}
+                    </span>
+                    <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
+                      {batter.runs}{" "}
+                      <span className="text-xs text-muted-foreground">({batter.balls})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              unavailable("Unavailable")
+            )}
+            {batters.length > 0 && (
+              <p className="mt-2 text-[11px] text-muted-foreground">* striker · runs (balls)</p>
+            )}
+          </div>
+
+          <div className="sm:px-5">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Current bowler
+            </p>
+            {hasBowler && bowler ? (
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                  {bowler.name}
+                </span>
+                <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
+                  {bowler.overs} ov · {bowler.runs}/{bowler.wickets}
+                </span>
+              </div>
+            ) : (
+              unavailable("Unavailable")
+            )}
+          </div>
+
+          <div className="sm:pl-5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Win probability
+              </p>
+              <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-primary to-accent opacity-40" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {unavailable("Unavailable from live feed")}
+            </p>
+            <p className="sr-only">
+              {team1Label} and {team2Label} win probabilities are unavailable from the live feed.
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

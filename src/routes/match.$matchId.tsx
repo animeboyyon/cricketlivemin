@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Trophy, Calendar, Activity, ListOrdered } from "luci
 import { getCricketHome } from "@/lib/cricket.functions";
 import { getMatchCenter } from "@/lib/scorecard.functions";
 import { MatchStats, MatchWorm } from "@/components/match/MatchAnalytics";
+import { LiveMatchSummary } from "@/components/match/LiveMatchSummary";
 import { Scorecard } from "@/components/match/Scorecard";
 import type { MatchEntry, Innings, TeamScore } from "@/types/cricket";
 
@@ -11,7 +12,10 @@ export const Route = createFileRoute("/match/$matchId")({
   head: ({ params }) => ({
     meta: [
       { title: `Match ${params.matchId} — Cricket Live Scoreboard` },
-      { name: "description", content: "Live cricket match details, innings breakdown, and venue info." },
+      {
+        name: "description",
+        content: "Live cricket match details, innings breakdown, and venue info.",
+      },
     ],
   }),
   component: MatchDetail,
@@ -19,7 +23,10 @@ export const Route = createFileRoute("/match/$matchId")({
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
       <h1 className="text-3xl font-bold text-foreground">Match not found</h1>
       <p className="mt-2 text-muted-foreground">It may no longer be in the active feed.</p>
-      <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+      <Link
+        to="/"
+        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to scoreboard
       </Link>
     </div>
@@ -28,7 +35,10 @@ export const Route = createFileRoute("/match/$matchId")({
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
       <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
       <p className="mt-2 text-sm text-destructive">{error.message}</p>
-      <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+      <Link
+        to="/"
+        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Back
       </Link>
     </div>
@@ -200,6 +210,15 @@ function MatchDetail() {
         </div>
       ) : center && center.innings.length > 0 ? (
         <>
+          <div className="mb-4 sm:mb-6">
+            <LiveMatchSummary
+              center={center}
+              isLive={isLive}
+              team1Label={info.team1.teamSName}
+              team2Label={info.team2.teamSName}
+            />
+          </div>
+
           <section
             aria-labelledby="scorecard-heading"
             className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:mt-6 sm:p-6"
