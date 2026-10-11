@@ -57,12 +57,18 @@ export interface InningsScorecard {
   fallOfWickets: FallOfWicket[];
 }
 
+export interface WinProbability {
+  team1: number;
+  team2: number;
+}
+
 export interface LiveSituation {
   inningsId: number;
   currentRunRate: number | null;
   requiredRunRate: number | null;
   target: number | null;
   runsToWin: number | null;
+  winProbability: WinProbability | null;
 }
 
 export interface MatchCenter {

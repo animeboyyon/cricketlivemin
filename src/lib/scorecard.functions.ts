@@ -115,12 +115,21 @@ function normalizeInnings(raw: Raw): InningsScorecard {
 function normalizeLive(mini: Raw | undefined): LiveSituation | null {
   if (!mini) return null;
   const positive = (v: unknown) => (typeof v === "number" && v > 0 ? v : null);
+  const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
+  const team1Probability = probability?.team1 ?? probability?.team1Percentage ?? mini.team1WinProbability;
+  const team2Probability = probability?.team2 ?? probability?.team2Percentage ?? mini.team2WinProbability;
+  const winProbability =
+    typeof team1Probability === "number" && typeof team2Probability === "number"
+      ? { team1: team1Probability, team2: team2Probability }
+      : null;
+
   return {
     inningsId: num(mini.inningsId),
     currentRunRate: typeof mini.currentRunRate === "number" ? mini.currentRunRate : null,
     requiredRunRate: positive(mini.requiredRunRate),
     target: positive(mini.target),
     runsToWin: positive(mini.remRunsToWin),
+    winProbability,
   };
 }
 

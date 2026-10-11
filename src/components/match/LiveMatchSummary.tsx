@@ -16,10 +16,15 @@ export function LiveMatchSummary({
   team1Label: string;
   team2Label: string;
 }) {
-  const innings = center.innings.at(-1);
-  const batters = innings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
-  const bowler = innings?.bowlers.at(-1);
+  const liveInnings = center.live?.inningsId
+    ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId)
+    : undefined;
+  const hasLiveInnings = isLive && Boolean(liveInnings);
+  const batters =
+    liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
+  const bowler = liveInnings?.bowlers.at(-1);
   const hasBowler = Boolean(bowler && (bowler.overs > 0 || bowler.runs > 0 || bowler.wickets > 0));
+  const probability = center.live?.winProbability;
 
   return (
     <section
@@ -44,7 +49,7 @@ export function LiveMatchSummary({
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-border">
-          <div className="sm:pr-5">
+          {hasLiveInnings && <div className="sm:pr-5">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Current batter
             </p>
@@ -75,9 +80,9 @@ export function LiveMatchSummary({
             {batters.length > 0 && (
               <p className="mt-2 text-[11px] text-muted-foreground">* striker · runs (balls)</p>
             )}
-          </div>
+          </div>}
 
-          <div className="sm:px-5">
+          {hasLiveInnings && <div className="sm:px-5">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Current bowler
             </p>
@@ -93,7 +98,7 @@ export function LiveMatchSummary({
             ) : (
               unavailable("Unavailable")
             )}
-          </div>
+          </div>}
 
           <div className="sm:pl-5">
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -102,15 +107,38 @@ export function LiveMatchSummary({
               </p>
               <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-              <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-primary to-accent opacity-40" />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {unavailable("Unavailable from live feed")}
-            </p>
-            <p className="sr-only">
-              {team1Label} and {team2Label} win probabilities are unavailable from the live feed.
-            </p>
+            {probability ? (
+              <>
+                <div
+                  className="flex h-1.5 overflow-hidden rounded-full bg-muted"
+                  role="img"
+                  aria-label={`${team1Label} ${probability.team1}% win probability, ${team2Label} ${probability.team2}% win probability`}
+                >
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${probability.team1}%` }}
+                  />
+                  <div
+                    className="h-full bg-accent"
+                    style={{ width: `${probability.team2}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex justify-between gap-3 text-xs tabular-nums text-muted-foreground">
+                  <span>{team1Label} {probability.team1}%</span>
+                  <span>{team2Label} {probability.team2}%</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="h-1.5 rounded-full bg-muted" aria-hidden="true" />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {unavailable("Unavailable from live feed")}
+                </p>
+                <p className="sr-only">
+                  {team1Label} and {team2Label} win probabilities are unavailable from the live feed.
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
