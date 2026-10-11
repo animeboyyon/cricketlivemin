@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { MatchCard } from "@/components/MatchCard";
@@ -37,11 +37,6 @@ function Index() {
   });
 
   const [filter, setFilter] = useState<Filter>("all");
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const matches: MatchEntry[] = data?.matches ?? [];
 
@@ -68,8 +63,6 @@ function Index() {
       return true;
     });
   }, [matches, filter]);
-
-  const lastUpdatedSec = dataUpdatedAt ? Math.floor((now - dataUpdatedAt) / 1000) : 0;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -139,11 +132,6 @@ function Index() {
               </button>
             );
           })}
-          {dataUpdatedAt > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              Updated {lastUpdatedSec}s ago
-            </span>
-          )}
         </div>
       </header>
 
