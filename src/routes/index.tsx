@@ -88,7 +88,7 @@ function Index() {
             </h1>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
               Real-time scores, fixtures, and results from across the cricketing world.
-              Auto-refreshes every 30 seconds.
+              Instant live updates when available.
             </p>
           </div>
           <button
@@ -180,7 +180,7 @@ function Index() {
       )}
 
       <footer className="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-        Data sourced from cricbuzz.com · Auto-refreshes every 30s
+        Data sourced from cricbuzz.com · Instant live updates when available
       </footer>
     </main>
   );
