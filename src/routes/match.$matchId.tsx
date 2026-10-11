@@ -1,7 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Trophy, Calendar, Activity } from "lucide-react";
+import { ArrowLeft, MapPin, Trophy, Calendar, Activity, ListOrdered } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
+import { getMatchCenter } from "@/lib/scorecard.functions";
+import { MatchAnalytics } from "@/components/match/MatchAnalytics";
+import { Scorecard } from "@/components/match/Scorecard";
 import type { MatchEntry, Innings, TeamScore } from "@/types/cricket";
 
 export const Route = createFileRoute("/match/$matchId")({
@@ -93,6 +96,13 @@ function MatchDetail() {
     refetchInterval: 30_000,
   });
 
+  const { data: center, isLoading: centerLoading } = useQuery({
+    queryKey: ["match-center", id],
+    queryFn: () => getMatchCenter({ data: { matchId: id } }),
+    enabled: Number.isInteger(id) && id > 0,
+    refetchInterval: 30_000,
+  });
+
   if (isLoading && !data) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12">
@@ -165,6 +175,47 @@ function MatchDetail() {
           scores={score?.team2Score}
         />
       </section>
+
+      {centerLoading && !center ? (
+        <div className="mt-6 space-y-6" aria-busy="true" aria-label="Loading match analytics">
+          <div className="h-96 animate-pulse rounded-2xl bg-card" />
+          <div className="h-80 animate-pulse rounded-2xl bg-card" />
+        </div>
+      ) : center && center.innings.length > 0 ? (
+        <>
+          <div className="mt-6">
+            <MatchAnalytics
+              center={center}
+              team1Label={info.team1.teamSName}
+              team2Label={info.team2.teamSName}
+              isLive={isLive}
+            />
+          </div>
+
+          <section
+            aria-labelledby="scorecard-heading"
+            className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
+          >
+            <h2
+              id="scorecard-heading"
+              className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              <ListOrdered className="h-3.5 w-3.5 text-accent" /> Scorecard
+            </h2>
+            <Scorecard
+              innings={center.innings}
+              team1Id={center.team1Id || info.team1.teamId}
+              liveInningsId={isLive ? center.live?.inningsId : undefined}
+            />
+          </section>
+        </>
+      ) : (
+        <p className="mt-6 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          {center?.error
+            ? "Detailed scorecard is unavailable right now."
+            : "Scorecard and worm chart will appear once play begins."}
+        </p>
+      )}
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2">
         {info.venueInfo && (
