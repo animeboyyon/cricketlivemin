@@ -87,8 +87,8 @@ function Index() {
               </span>
             </h1>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-              Real-time scores, fixtures, and results from across the cricketing world.
-              Instant live updates when available.
+              Real-time scores, fixtures, and results from across the cricketing world. Instant live
+              updates when available.
             </p>
           </div>
           <button
@@ -161,10 +161,7 @@ function Index() {
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-56 animate-pulse rounded-2xl border border-border bg-card"
-            />
+            <div key={i} className="h-56 animate-pulse rounded-2xl border border-border bg-card" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
