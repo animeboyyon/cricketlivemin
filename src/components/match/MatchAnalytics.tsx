@@ -5,21 +5,9 @@ import type { MatchCenter } from "@/types/scorecard";
 import { StatsBar, type StatItem } from "./StatsBar";
 import { WormChart } from "./WormChart";
 
-interface MatchAnalyticsProps {
-  center: MatchCenter;
-  team1Label: string;
-  team2Label: string;
-  isLive: boolean;
-}
-
-export function MatchAnalytics({ center, team1Label, team2Label, isLive }: MatchAnalyticsProps) {
-  const { innings, live, team1Id, team2Id } = center;
+export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: boolean }) {
+  const { innings, live } = center;
   const maxOvers = maxOversForFormat(center.format);
-
-  const wormData = useMemo(() => {
-    const latestFor = (teamId: number) => innings.filter((i) => i.battingTeamId === teamId).at(-1);
-    return buildWormData(latestFor(team1Id), latestFor(team2Id));
-  }, [innings, team1Id, team2Id]);
 
   const stats = useMemo<StatItem[]>(() => {
     const current = innings.at(-1);
@@ -78,37 +66,46 @@ export function MatchAnalytics({ center, team1Label, team2Label, isLive }: Match
     ];
   }, [innings, live, maxOvers, isLive]);
 
+  if (stats.length === 0) return null;
+  return <StatsBar items={stats} />;
+}
+
+export function MatchWorm({
+  center,
+  team1Label,
+  team2Label,
+}: {
+  center: MatchCenter;
+  team1Label: string;
+  team2Label: string;
+}) {
+  const { innings, team1Id, team2Id } = center;
+  const maxOvers = maxOversForFormat(center.format);
+
+  const wormData = useMemo(() => {
+    const latestFor = (teamId: number) => innings.filter((i) => i.battingTeamId === teamId).at(-1);
+    return buildWormData(latestFor(team1Id), latestFor(team2Id));
+  }, [innings, team1Id, team2Id]);
+
   if (innings.length === 0) return null;
 
   return (
     <section
       aria-labelledby="analytics-heading"
-      className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
+      className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6"
     >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2
-          id="analytics-heading"
-          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-        >
-          <TrendingUp className="h-3.5 w-3.5 text-primary" /> Match worm
-        </h2>
-        {isLive && (
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Auto-refresh 30s
-          </span>
-        )}
-      </div>
-
-      <StatsBar items={stats} />
-
-      <div className="mt-6">
-        <WormChart
-          data={wormData}
-          team1Label={team1Label}
-          team2Label={team2Label}
-          maxOvers={maxOvers}
-        />
-      </div>
+      <h2
+        id="analytics-heading"
+        className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+      >
+        <TrendingUp className="h-3.5 w-3.5 text-primary" /> Match worm
+      </h2>
+      <WormChart
+        data={wormData}
+        team1Label={team1Label}
+        team2Label={team2Label}
+        maxOvers={maxOvers}
+      />
     </section>
   );
 }

@@ -10,11 +10,11 @@ export function FallOfWickets({ wickets }: { wickets: FallOfWicket[] }) {
       >
         Fall of wickets
       </h4>
-      <ol className="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+      <ol className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 sm:-mx-0 [scrollbar-width:none] sm:mx-0 sm:scroll-px-0 sm:px-0">
         {wickets.map((w) => (
           <li
             key={w.wicketNumber}
-            className="min-w-28 shrink-0 snap-start rounded-xl border border-border bg-background/40 px-3 py-2"
+            className="min-w-24 shrink-0 snap-start rounded-xl border border-border bg-background/40 px-2.5 py-1.5 sm:min-w-28 sm:px-3 sm:py-2"
           >
             <p className="font-mono text-sm font-bold tabular-nums text-foreground">
               {w.runs}

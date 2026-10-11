@@ -14,7 +14,7 @@ export function StatsBar({ items }: { items: StatItem[] }) {
         <div
           key={item.label}
           className={cn(
-            "px-4 py-3",
+            "min-w-0 px-3 py-2.5 sm:px-4 sm:py-3",
             i % 2 === 1 && "border-l border-border sm:border-l-0",
             i >= 2 && "border-t border-border sm:border-t-0",
           )}
@@ -24,7 +24,7 @@ export function StatsBar({ items }: { items: StatItem[] }) {
           </dt>
           <dd
             className={cn(
-              "mt-1 font-mono text-xl font-bold tabular-nums",
+              "mt-0.5 font-mono text-lg font-bold tabular-nums sm:mt-1 sm:text-xl",
               item.tone === "primary" && "text-primary",
               item.tone === "accent" && "text-accent",
               (!item.tone || item.tone === "default") && "text-foreground",

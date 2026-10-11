@@ -60,8 +60,8 @@ export function WormChart({ data, team1Label, team2Label, maxOvers }: WormChartP
           Wicket
         </span>
       </div>
-      <ChartContainer config={config} className="aspect-auto h-64 w-full sm:h-72">
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <ChartContainer config={config} className="aspect-auto h-52 w-full sm:h-72">
+        <LineChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -20 }}>
           <defs>
             <filter id="worm-glow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -85,7 +85,7 @@ export function WormChart({ data, team1Label, team2Label, maxOvers }: WormChartP
           <YAxis
             tickLine={false}
             axisLine={false}
-            width={48}
+            width={44}
             tickMargin={4}
             className="font-mono"
           />
