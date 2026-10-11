@@ -19,9 +19,9 @@ export function LiveMatchSummary({
   const liveInnings = center.live?.inningsId
     ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId)
     : undefined;
-  const hasLiveInnings = isLive && Boolean(liveInnings);
-  const batters =
-    liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
+  const playIsInProgress = isLive && center.state === "In Progress";
+  const hasLiveInnings = playIsInProgress && Boolean(liveInnings);
+  const batters = liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
   const bowler = liveInnings?.bowlers.at(-1);
   const hasBowler = Boolean(bowler && (bowler.overs > 0 || bowler.runs > 0 || bowler.wickets > 0));
   const probability = center.live?.winProbability;
@@ -49,56 +49,60 @@ export function LiveMatchSummary({
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3 sm:divide-x sm:divide-border">
-          {hasLiveInnings && <div className="sm:pr-5">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Current batter
-            </p>
-            {batters.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {batters.map((batter, index) => (
-                  <div key={batter.id} className="flex items-center justify-between gap-3">
-                    <span
-                      className={
-                        index === 0
-                          ? "min-w-0 truncate text-sm font-semibold text-primary"
-                          : "min-w-0 truncate text-sm text-foreground"
-                      }
-                    >
-                      {index === 0 && <span aria-label="Striker">*</span>}
-                      {batter.name}
-                    </span>
-                    <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
-                      {batter.runs}{" "}
-                      <span className="text-xs text-muted-foreground">({batter.balls})</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              unavailable("Unavailable")
-            )}
-            {batters.length > 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground">* striker · runs (balls)</p>
-            )}
-          </div>}
+          {hasLiveInnings && (
+            <div className="sm:pr-5">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Current batter
+              </p>
+              {batters.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {batters.map((batter, index) => (
+                    <div key={batter.id} className="flex items-center justify-between gap-3">
+                      <span
+                        className={
+                          index === 0
+                            ? "min-w-0 truncate text-sm font-semibold text-primary"
+                            : "min-w-0 truncate text-sm text-foreground"
+                        }
+                      >
+                        {index === 0 && <span aria-label="Striker">*</span>}
+                        {batter.name}
+                      </span>
+                      <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
+                        {batter.runs}{" "}
+                        <span className="text-xs text-muted-foreground">({batter.balls})</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                unavailable("Unavailable")
+              )}
+              {batters.length > 0 && (
+                <p className="mt-2 text-[11px] text-muted-foreground">* striker · runs (balls)</p>
+              )}
+            </div>
+          )}
 
-          {hasLiveInnings && <div className="sm:px-5">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Current bowler
-            </p>
-            {hasBowler && bowler ? (
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-                  {bowler.name}
-                </span>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
-                  {bowler.overs} ov · {bowler.runs}/{bowler.wickets}
-                </span>
-              </div>
-            ) : (
-              unavailable("Unavailable")
-            )}
-          </div>}
+          {hasLiveInnings && (
+            <div className="sm:px-5">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Current bowler
+              </p>
+              {hasBowler && bowler ? (
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                    {bowler.name}
+                  </span>
+                  <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
+                    {bowler.overs} ov · {bowler.runs}/{bowler.wickets}
+                  </span>
+                </div>
+              ) : (
+                unavailable("Unavailable")
+              )}
+            </div>
+          )}
 
           <div className="sm:pl-5">
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -114,18 +118,16 @@ export function LiveMatchSummary({
                   role="img"
                   aria-label={`${team1Label} ${probability.team1}% win probability, ${team2Label} ${probability.team2}% win probability`}
                 >
-                  <div
-                    className="h-full bg-primary"
-                    style={{ width: `${probability.team1}%` }}
-                  />
-                  <div
-                    className="h-full bg-accent"
-                    style={{ width: `${probability.team2}%` }}
-                  />
+                  <div className="h-full bg-primary" style={{ width: `${probability.team1}%` }} />
+                  <div className="h-full bg-accent" style={{ width: `${probability.team2}%` }} />
                 </div>
                 <div className="mt-2 flex justify-between gap-3 text-xs tabular-nums text-muted-foreground">
-                  <span>{team1Label} {probability.team1}%</span>
-                  <span>{team2Label} {probability.team2}%</span>
+                  <span>
+                    {team1Label} {probability.team1}%
+                  </span>
+                  <span>
+                    {team2Label} {probability.team2}%
+                  </span>
                 </div>
               </>
             ) : (
@@ -135,7 +137,8 @@ export function LiveMatchSummary({
                   {unavailable("Unavailable from live feed")}
                 </p>
                 <p className="sr-only">
-                  {team1Label} and {team2Label} win probabilities are unavailable from the live feed.
+                  {team1Label} and {team2Label} win probabilities are unavailable from the live
+                  feed.
                 </p>
               </>
             )}

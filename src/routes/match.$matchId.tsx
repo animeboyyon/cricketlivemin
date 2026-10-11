@@ -99,6 +99,74 @@ function InningsCard({
   );
 }
 
+function CombinedInningsCard({
+  team1Name,
+  team1Short,
+  team1Score,
+  team2Name,
+  team2Short,
+  team2Score,
+}: {
+  team1Name: string;
+  team1Short: string;
+  team1Score?: TeamScore;
+  team2Name: string;
+  team2Short: string;
+  team2Score?: TeamScore;
+}) {
+  const rows = [
+    { name: team1Name, short: team1Short, score: team1Score },
+    { name: team2Name, short: team2Short, score: team2Score },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5 sm:col-span-2">
+      <div className="flex flex-col gap-2">
+        {rows.map((team, index) => {
+          const innings = [team.score?.inngs1, team.score?.inngs2].filter(Boolean) as Innings[];
+          return (
+            <div
+              key={team.short}
+              className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-3 sm:px-4"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary ring-1 ring-primary/30">
+                {team.short.slice(0, 3)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-bold text-foreground">{team.name}</h3>
+                    <p className="text-xs text-muted-foreground">{team.short}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {innings.length > 0 ? (
+                      innings.map((inn, inningsIndex) => (
+                        <p
+                          key={inn.inningsId}
+                          className="font-mono text-lg font-bold tabular-nums text-foreground"
+                        >
+                          {formatInnings(inn)}
+                          {innings.length > 1 && (
+                            <span className="ml-2 text-[10px] font-sans font-normal uppercase tracking-wider text-muted-foreground">
+                              Inn {inningsIndex + 1}
+                            </span>
+                          )}
+                        </p>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Yet to bat</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MatchDetail() {
   const { matchId } = Route.useParams();
   const id = Number(matchId);
@@ -145,6 +213,7 @@ function MatchDetail() {
   const info = entry.match.matchInfo;
   const score = entry.match.matchScore;
   const isLive = LIVE_STATES.includes(info.state);
+  const isLimitedOvers = /^(odi|t20|t20i|one day|twenty20)$/i.test(info.matchFormat.trim());
 
   return (
     <main className="mx-auto max-w-4xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8">
@@ -190,18 +259,31 @@ function MatchDetail() {
         </div>
       </header>
 
-      <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
-        <InningsCard
-          teamName={info.team1.teamName}
-          short={info.team1.teamSName}
-          scores={score?.team1Score}
-        />
-        <InningsCard
-          teamName={info.team2.teamName}
-          short={info.team2.teamSName}
-          scores={score?.team2Score}
-        />
-      </section>
+      {isLimitedOvers ? (
+        <section className="mt-4 sm:mt-6">
+          <CombinedInningsCard
+            team1Name={info.team1.teamName}
+            team1Short={info.team1.teamSName}
+            team1Score={score?.team1Score}
+            team2Name={info.team2.teamName}
+            team2Short={info.team2.teamSName}
+            team2Score={score?.team2Score}
+          />
+        </section>
+      ) : (
+        <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
+          <InningsCard
+            teamName={info.team1.teamName}
+            short={info.team1.teamSName}
+            scores={score?.team1Score}
+          />
+          <InningsCard
+            teamName={info.team2.teamName}
+            short={info.team2.teamSName}
+            scores={score?.team2Score}
+          />
+        </section>
+      )}
 
       {centerLoading && !center ? (
         <div className="mt-6 space-y-6" aria-busy="true" aria-label="Loading match analytics">
