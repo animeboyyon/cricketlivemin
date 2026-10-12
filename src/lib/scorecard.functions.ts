@@ -175,11 +175,11 @@ function parseBalls(summary: unknown): string[] {
     .filter((token) => token !== "" && !/^\.+$/.test(token));
 }
 
-function parseRecentBalls(recentOvsStats: unknown): string[] {
+export function parseRecentBalls(recentOvsStats: unknown): string[] {
   return parseBalls(recentOvsStats).slice(-6);
 }
 
-function normalizeCommentary(raw: unknown): CommentaryEntry[] {
+export function normalizeCommentary(raw: unknown): CommentaryEntry[] {
   return values(raw)
     .filter((entry) => typeof entry.timestamp === "number")
     .sort((a, b) => b.timestamp - a.timestamp)
@@ -275,7 +275,7 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
   }
 }
 
-function estimateChaseProbability(
+export function estimateChaseProbability(
   innings: InningsScorecard[],
   live: LiveSituation | null,
 ): WinProbability | null {
