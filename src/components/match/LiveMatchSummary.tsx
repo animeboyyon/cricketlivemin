@@ -16,14 +16,16 @@ export function LiveMatchSummary({
   team1Label: string;
   team2Label: string;
 }) {
-  const liveInnings = center.live?.inningsId
-    ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId)
+  const inningsBreakStates = new Set(["innings break", "tea", "lunch", "stumps"]);
+  const playIsInProgress = isLive && !inningsBreakStates.has(center.state.trim().toLowerCase());
+  const liveInnings = playIsInProgress
+    ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId) ?? center.innings.at(-1)
     : undefined;
-  const playIsInProgress =
-    isLive && !["Innings Break", "Tea", "Lunch", "Stumps"].includes(center.state);
-  const hasLiveInnings = playIsInProgress && Boolean(liveInnings);
-  const batters = liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
-  const bowler = liveInnings?.bowlers.at(-1);
+  const hasLiveInnings = Boolean(liveInnings);
+  const batters = liveInnings?.batters.filter((batter) => batter.isBatting || !batter.isOut).slice(0, 2) ?? [];
+  const bowler = liveInnings?.bowlers.find((candidate) =>
+    candidate.overs > 0 || candidate.runs > 0 || candidate.wickets > 0,
+  ) ?? liveInnings?.bowlers.at(-1);
   const hasBowler = Boolean(bowler && (bowler.overs > 0 || bowler.runs > 0 || bowler.wickets > 0));
   const probability = center.live?.winProbability;
 
