@@ -82,7 +82,7 @@ function Index() {
 
   const [filter, setFilter] = useState<Filter>("all");
 
-  const matches: MatchEntry[] = data?.matches ?? [];
+  const matches = useMemo<MatchEntry[]>(() => data?.matches ?? [], [data?.matches]);
   const fetchedAt = data?.fetchedAt ?? (dataUpdatedAt || null);
   const isStale = Boolean(data?.stale) || Boolean(error && data);
 

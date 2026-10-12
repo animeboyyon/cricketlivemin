@@ -132,10 +132,14 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
     return null;
   };
   const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
-  const team1Probability = positive(probability?.team1 ?? probability?.team1Percentage) ??
-    positive(mini.team1WinProbability) ?? findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
-  const team2Probability = positive(probability?.team2 ?? probability?.team2Percentage) ??
-    positive(mini.team2WinProbability) ?? findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
+  const team1Probability =
+    positive(probability?.team1 ?? probability?.team1Percentage) ??
+    positive(mini.team1WinProbability) ??
+    findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
+  const team2Probability =
+    positive(probability?.team2 ?? probability?.team2Percentage) ??
+    positive(mini.team2WinProbability) ??
+    findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
   const winProbability =
     team1Probability !== null && team2Probability !== null
       ? { team1: team1Probability, team2: team2Probability }
@@ -164,20 +168,24 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const escapedId = String(matchId).replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
+    const escapedId = String(matchId).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // Cricbuzz embeds this as serialized Next.js data, so the match id and
     // percentages can be separated by escaped quotes and nested team objects.
     const match = new RegExp(
-      `winProbability.{0,900}?[\\\\\"']matchId[\\\\\"'][^0-9]{0,20}${escapedId}.{0,1400}`,
+      `winProbability.{0,900}?[\\\\"']matchId[\\\\"'][^0-9]{0,20}${escapedId}.{0,1400}`,
       "is",
     ).exec(html)?.[0];
     if (!match) return null;
 
     const team1 = Number(
-      /[\\\\\"']team1[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+      /[\\"']team1[\\"'][\s\S]{0,300}?[\\"']percent[\\"'][^0-9]{0,10}(\d{1,3}(?:\.\d+)?)/i.exec(
+        match,
+      )?.[1],
     );
     const team2 = Number(
-      /[\\\\\"']team2[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+      /[\\"']team2[\\"'][\s\S]{0,300}?[\\"']percent[\\"'][^0-9]{0,10}(\d{1,3}(?:\.\d+)?)/i.exec(
+        match,
+      )?.[1],
     );
     if (![team1, team2].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) {
       return null;
@@ -188,17 +196,29 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
   }
 }
 
-function estimateChaseProbability(innings: InningsScorecard[], live: LiveSituation | null): WinProbability | null {
+function estimateChaseProbability(
+  innings: InningsScorecard[],
+  live: LiveSituation | null,
+): WinProbability | null {
   if (!live?.target || live.inningsId <= 0) return null;
   const current = innings.find((entry) => entry.inningsId === live.inningsId);
   if (!current || current.runs <= 0 || current.overs <= 0) return null;
   const previous = innings.find((entry) => entry.inningsId !== current.inningsId);
-  const ballsRemaining = Math.max(1, Math.round((live.target - current.runs) / Math.max(live.requiredRunRate ?? 6, 1) * 6));
+  const ballsRemaining = Math.max(
+    1,
+    Math.round(((live.target - current.runs) / Math.max(live.requiredRunRate ?? 6, 1)) * 6),
+  );
   const wicketsRemaining = Math.max(0, 10 - current.wickets);
-  const requiredRate = live.requiredRunRate ?? ((live.target - current.runs) / (ballsRemaining / 6));
+  const requiredRate = live.requiredRunRate ?? (live.target - current.runs) / (ballsRemaining / 6);
   const scoringRate = current.runRate || current.runs / (current.overs || 1);
   const pressure = requiredRate / Math.max(scoringRate, 1);
-  const chase = Math.max(5, Math.min(95, 58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20));
+  const chase = Math.max(
+    5,
+    Math.min(
+      95,
+      58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20,
+    ),
+  );
   const battingTeamIsTeam1 = current.battingTeamId === (previous?.battingTeamId ?? 0);
   return battingTeamIsTeam1
     ? { team1: Math.round(chase), team2: Math.round(100 - chase), estimated: true }
@@ -244,7 +264,8 @@ export const getMatchCenter = createServerFn({ method: "GET" })
         live: (() => {
           const normalized = normalizeLive(comm?.miniscore);
           if (!normalized) return null;
-          const current = innings.find((entry) => entry.inningsId === normalized.inningsId) ?? innings.at(-1);
+          const current =
+            innings.find((entry) => entry.inningsId === normalized.inningsId) ?? innings.at(-1);
           if (!current) return normalized;
           const previous = innings
             .filter((entry) => entry.inningsId !== current.inningsId)
@@ -252,8 +273,12 @@ export const getMatchCenter = createServerFn({ method: "GET" })
           const live = {
             ...normalized,
             inningsId: current.inningsId,
-            target: normalized.target ?? (previous && current.inningsId > previous.inningsId ? previous.runs + 1 : null),
-            runsToWin: normalized.runsToWin ?? (normalized.target && current ? Math.max(0, normalized.target - current.runs) : null),
+            target:
+              normalized.target ??
+              (previous && current.inningsId > previous.inningsId ? previous.runs + 1 : null),
+            runsToWin:
+              normalized.runsToWin ??
+              (normalized.target && current ? Math.max(0, normalized.target - current.runs) : null),
           };
           if (live.winProbability) return live;
           if (prediction) return { ...live, winProbability: prediction };
