@@ -7,6 +7,7 @@ import type {
   InningsScorecard,
   LiveSituation,
   MatchCenter,
+  WinProbability,
 } from "@/types/scorecard";
 
 const HEADERS = {
@@ -141,6 +142,29 @@ async function fetchJson(url: string): Promise<Raw | null> {
   return (await res.json()) as Raw;
 }
 
+async function fetchPrediction(matchId: number): Promise<WinProbability | null> {
+  try {
+    const res = await fetch("https://www.cricbuzz.com/live-cricket-match-predictions", {
+      headers: { ...HEADERS, Accept: "text/html" },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const matchIndex = Math.max(
+      html.indexOf(`"matchId":${matchId}`),
+      html.indexOf(`\\"matchId\\":${matchId}`),
+    );
+    if (matchIndex < 0) return null;
+    const fragment = html.slice(Math.max(0, matchIndex - 400), matchIndex + 1000);
+    if (!fragment.includes("winProbability")) return null;
+    const team1 = /team1[^}]{0,300}?percent[^0-9]*(\\d+(?:\\.\\d+)?)/.exec(fragment)?.[1];
+    const team2 = /team2[^}]{0,300}?percent[^0-9]*(\\d+(?:\\.\\d+)?)/.exec(fragment)?.[1];
+    if (!team1 || !team2) return null;
+    return { team1: Number(team1), team2: Number(team2) };
+  } catch {
+    return null;
+  }
+}
+
 export const getMatchCenter = createServerFn({ method: "GET" })
   .inputValidator(z.object({ matchId: z.number().int().positive() }))
   .handler(async ({ data }): Promise<MatchCenter> => {
@@ -157,9 +181,10 @@ export const getMatchCenter = createServerFn({ method: "GET" })
       error: null,
     };
     try {
-      const [scorecard, comm] = await Promise.all([
+      const [scorecard, comm, prediction] = await Promise.all([
         fetchJson(`https://www.cricbuzz.com/api/mcenter/scorecard/${matchId}`),
         fetchJson(`https://www.cricbuzz.com/api/mcenter/comm/${matchId}`).catch(() => null),
+        fetchPrediction(matchId),
       ]);
       if (!scorecard) return { ...empty, error: "Scorecard unavailable" };
 
@@ -176,7 +201,11 @@ export const getMatchCenter = createServerFn({ method: "GET" })
         team1Id: num(header.team1?.id),
         team2Id: num(header.team2?.id),
         innings,
-        live: normalizeLive(comm?.miniscore),
+        live: (() => {
+          const live = normalizeLive(comm?.miniscore);
+          if (!live || live.winProbability || !prediction) return live;
+          return { ...live, winProbability: prediction };
+        })(),
         error: null,
       };
     } catch (e) {
