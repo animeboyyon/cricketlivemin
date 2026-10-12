@@ -115,14 +115,33 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5370686644861119"
-          crossOrigin="anonymous"
-        />
       </head>
       <body>
         {children}
+        <div
+          id="frame"
+          style={{
+            width: "100%",
+            margin: "auto",
+            position: "relative",
+            zIndex: 99998,
+          }}
+        >
+          <iframe
+            data-aa="2458278"
+            src="https://acceptable.a-ads.com/2458278/?size=Adaptive"
+            title="Advertisement"
+            style={{
+              border: 0,
+              padding: 0,
+              width: "70%",
+              height: "auto",
+              overflow: "hidden",
+              display: "block",
+              margin: "auto",
+            }}
+          />
+        </div>
         <Analytics />
         <Scripts />
       </body>
