@@ -35,15 +35,17 @@ async function fetchHome(): Promise<CricketHomeResult> {
   }
 }
 
+export async function loadHome(): Promise<CricketHomeResult> {
+  if (lastGood && Date.now() - lastGood.fetchedAt < CACHE_TTL_MS) {
+    return { ...lastGood, error: null, stale: false };
+  }
+  // Share one upstream request between concurrent visitors.
+  inflight ??= fetchHome().finally(() => {
+    inflight = null;
+  });
+  return inflight;
+}
+
 export const getCricketHome = createServerFn({ method: "GET" }).handler(
-  async (): Promise<CricketHomeResult> => {
-    if (lastGood && Date.now() - lastGood.fetchedAt < CACHE_TTL_MS) {
-      return { ...lastGood, error: null, stale: false };
-    }
-    // Share one upstream request between concurrent visitors.
-    inflight ??= fetchHome().finally(() => {
-      inflight = null;
-    });
-    return inflight;
-  },
+  async (): Promise<CricketHomeResult> => loadHome(),
 );
