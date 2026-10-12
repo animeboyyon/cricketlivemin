@@ -331,7 +331,7 @@ function MatchDetail() {
                     }
                     aria-hidden="true"
                   />
-                  {centerFetching ? "Updating" : "Live"}
+                  Live
                 </span>
               )}
             </div>
