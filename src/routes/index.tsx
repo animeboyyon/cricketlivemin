@@ -54,14 +54,35 @@ function Index() {
   }, [matches]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return matches;
-    return matches.filter((m) => {
-      const s = m.match.matchInfo.state;
-      if (filter === "live") return LIVE_STATES.includes(s);
-      if (filter === "upcoming") return s === "Preview" || s === "Upcoming";
-      if (filter === "complete") return s === "Complete";
-      return true;
-    });
+    const visibleMatches =
+      filter === "all"
+        ? matches
+        : matches.filter((m) => {
+            const s = m.match.matchInfo.state;
+            if (filter === "live") return LIVE_STATES.includes(s);
+            if (filter === "upcoming") return s === "Preview" || s === "Upcoming";
+            if (filter === "complete") return s === "Complete";
+            return true;
+          });
+
+    if (filter !== "all") return visibleMatches;
+
+    const categoryRank = (state: string) => {
+      if (LIVE_STATES.includes(state)) return 0;
+      if (state === "Preview" || state === "Upcoming") return 1;
+      if (state === "Complete") return 2;
+      return 3;
+    };
+
+    return visibleMatches
+      .map((match, index) => ({ match, index }))
+      .sort(
+        (a, b) =>
+          categoryRank(a.match.match.matchInfo.state) -
+            categoryRank(b.match.match.matchInfo.state) ||
+          a.index - b.index,
+      )
+      .map(({ match }) => match);
   }, [matches, filter]);
 
   return (
