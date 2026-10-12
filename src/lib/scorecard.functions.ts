@@ -7,6 +7,7 @@ import type {
   InningsScorecard,
   LiveSituation,
   MatchCenter,
+  WinProbability,
 } from "@/types/scorecard";
 
 const HEADERS = {
@@ -114,20 +115,35 @@ function normalizeInnings(raw: Raw): InningsScorecard {
 
 function normalizeLive(mini: Raw | undefined): LiveSituation | null {
   if (!mini) return null;
-  const positive = (v: unknown) => (typeof v === "number" && v > 0 ? v : null);
+  const positive = (v: unknown) => {
+    const value = typeof v === "string" ? Number.parseFloat(v.replace(/%/g, "")) : v;
+    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const findNumber = (source: unknown, keys: string[]): number | null => {
+    if (!source || typeof source !== "object") return null;
+    for (const [key, value] of Object.entries(source as Raw)) {
+      if (keys.some((candidate) => key.toLowerCase().replace(/[_-]/g, "").includes(candidate))) {
+        const parsed = positive(value);
+        if (parsed !== null && parsed <= 100) return parsed;
+      }
+      const nested = findNumber(value, keys);
+      if (nested !== null) return nested;
+    }
+    return null;
+  };
   const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
-  const team1Probability =
-    probability?.team1 ?? probability?.team1Percentage ?? mini.team1WinProbability;
-  const team2Probability =
-    probability?.team2 ?? probability?.team2Percentage ?? mini.team2WinProbability;
+  const team1Probability = positive(probability?.team1 ?? probability?.team1Percentage) ??
+    positive(mini.team1WinProbability) ?? findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
+  const team2Probability = positive(probability?.team2 ?? probability?.team2Percentage) ??
+    positive(mini.team2WinProbability) ?? findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
   const winProbability =
-    typeof team1Probability === "number" && typeof team2Probability === "number"
+    team1Probability !== null && team2Probability !== null
       ? { team1: team1Probability, team2: team2Probability }
       : null;
 
   return {
     inningsId: num(mini.inningsId),
-    currentRunRate: typeof mini.currentRunRate === "number" ? mini.currentRunRate : null,
+    currentRunRate: positive(mini.currentRunRate),
     requiredRunRate: positive(mini.requiredRunRate),
     target: positive(mini.target),
     runsToWin: positive(mini.remRunsToWin),
@@ -139,6 +155,52 @@ async function fetchJson(url: string): Promise<Raw | null> {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) return null;
   return (await res.json()) as Raw;
+}
+
+async function fetchPrediction(matchId: number): Promise<WinProbability | null> {
+  try {
+    const res = await fetch("https://www.cricbuzz.com/live-cricket-match-predictions", {
+      headers: { ...HEADERS, Accept: "text/html" },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const escapedId = String(matchId).replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
+    // Cricbuzz embeds this as serialized Next.js data, so the match id and
+    // percentages can be separated by escaped quotes and nested team objects.
+    const match = new RegExp(
+      `winProbability.{0,900}?[\\\\\"']matchId[\\\\\"'][^0-9]{0,20}${escapedId}.{0,1400}`,
+      "is",
+    ).exec(html)?.[0];
+    if (!match) return null;
+
+    const team1 = Number(
+      /[\\\\\"']team1[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+    );
+    const team2 = Number(
+      /[\\\\\"']team2[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+    );
+    if (![team1, team2].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) {
+      return null;
+    }
+    return { team1, team2 };
+  } catch {
+    return null;
+  }
+}
+
+function estimateChaseProbability(innings: InningsScorecard[], live: LiveSituation | null): WinProbability | null {
+  if (!live?.target || live.inningsId <= 0) return null;
+  const current = innings.find((entry) => entry.inningsId === live.inningsId);
+  if (!current || current.runs <= 0 || current.overs <= 0) return null;
+  const previous = innings.find((entry) => entry.inningsId !== current.inningsId);
+  const ballsRemaining = Math.max(1, Math.round((live.target - current.runs) / Math.max(live.requiredRunRate ?? 6, 1) * 6));
+  const wicketsRemaining = Math.max(0, 10 - current.wickets);
+  const requiredRate = live.requiredRunRate ?? ((live.target - current.runs) / (ballsRemaining / 6));
+  const scoringRate = current.runRate || current.runs / (current.overs || 1);
+  const pressure = requiredRate / Math.max(scoringRate, 1);
+  const chase = Math.max(5, Math.min(95, 58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20));
+  const battingTeamIsTeam1 = current.battingTeamId === (previous?.battingTeamId ?? 0);
+  return battingTeamIsTeam1 ? { team1: Math.round(chase), team2: Math.round(100 - chase) } : { team1: Math.round(100 - chase), team2: Math.round(chase) };
 }
 
 export const getMatchCenter = createServerFn({ method: "GET" })
@@ -157,9 +219,10 @@ export const getMatchCenter = createServerFn({ method: "GET" })
       error: null,
     };
     try {
-      const [scorecard, comm] = await Promise.all([
+      const [scorecard, comm, prediction] = await Promise.all([
         fetchJson(`https://www.cricbuzz.com/api/mcenter/scorecard/${matchId}`),
         fetchJson(`https://www.cricbuzz.com/api/mcenter/comm/${matchId}`).catch(() => null),
+        fetchPrediction(matchId),
       ]);
       if (!scorecard) return { ...empty, error: "Scorecard unavailable" };
 
@@ -176,7 +239,24 @@ export const getMatchCenter = createServerFn({ method: "GET" })
         team1Id: num(header.team1?.id),
         team2Id: num(header.team2?.id),
         innings,
-        live: normalizeLive(comm?.miniscore),
+        live: (() => {
+          const normalized = normalizeLive(comm?.miniscore);
+          if (!normalized) return null;
+          const current = innings.find((entry) => entry.inningsId === normalized.inningsId) ?? innings.at(-1);
+          if (!current) return normalized;
+          const previous = innings
+            .filter((entry) => entry.inningsId !== current.inningsId)
+            .sort((a, b) => b.inningsId - a.inningsId)[0];
+          const live = {
+            ...normalized,
+            inningsId: current.inningsId,
+            target: normalized.target ?? (previous && current.inningsId > previous.inningsId ? previous.runs + 1 : null),
+            runsToWin: normalized.runsToWin ?? (normalized.target && current ? Math.max(0, normalized.target - current.runs) : null),
+          };
+          if (live.winProbability) return live;
+          if (prediction) return { ...live, winProbability: prediction };
+          return { ...live, winProbability: estimateChaseProbability(innings, live) };
+        })(),
         error: null,
       };
     } catch (e) {
