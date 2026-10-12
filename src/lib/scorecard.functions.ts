@@ -150,16 +150,24 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
     if (!res.ok) return null;
     const html = await res.text();
     const escapedId = String(matchId).replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
-    const match = new RegExp(`.{0,1200}(?:matchId|match_id)[^0-9]{0,20}${escapedId}.{0,5000}`, "is").exec(html)?.[0];
+    // Cricbuzz embeds this as serialized Next.js data, so the match id and
+    // percentages can be separated by escaped quotes and nested team objects.
+    const match = new RegExp(
+      `winProbability.{0,900}?[\\\\\"']matchId[\\\\\"'][^0-9]{0,20}${escapedId}.{0,1400}`,
+      "is",
+    ).exec(html)?.[0];
     if (!match) return null;
 
-    const percentages = [...match.matchAll(/(?:percent|percentage|probability|winProbability)[^0-9]{0,40}(\\d{1,3}(?:\\.\\d+)?)/gi)]
-      .map((result) => Number(result[1]))
-      .filter((value) => value >= 0 && value <= 100);
-    if (percentages.length < 2) return null;
-    const team1 = percentages[0];
-    const team2 = percentages[1];
-    return { team1, team2: Math.max(0, Math.min(100, 100 - team1 || team2)) };
+    const team1 = Number(
+      /[\\\\\"']team1[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+    );
+    const team2 = Number(
+      /[\\\\\"']team2[\\\\\"'][\\s\\S]{0,300}?[\\\\\"']percent[\\\\\"'][^0-9]{0,10}(\\d{1,3}(?:\\.\\d+)?)/i.exec(match)?.[1],
+    );
+    if (![team1, team2].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) {
+      return null;
+    }
+    return { team1, team2 };
   } catch {
     return null;
   }
