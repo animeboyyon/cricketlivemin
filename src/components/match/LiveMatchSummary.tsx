@@ -19,7 +19,8 @@ export function LiveMatchSummary({
   const liveInnings = center.live?.inningsId
     ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId)
     : undefined;
-  const playIsInProgress = isLive && center.state === "In Progress";
+  const playIsInProgress =
+    isLive && !["Innings Break", "Tea", "Lunch", "Stumps"].includes(center.state);
   const hasLiveInnings = playIsInProgress && Boolean(liveInnings);
   const batters = liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
   const bowler = liveInnings?.bowlers.at(-1);
