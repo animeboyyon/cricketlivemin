@@ -115,20 +115,35 @@ function normalizeInnings(raw: Raw): InningsScorecard {
 
 function normalizeLive(mini: Raw | undefined): LiveSituation | null {
   if (!mini) return null;
-  const positive = (v: unknown) => (typeof v === "number" && v > 0 ? v : null);
+  const positive = (v: unknown) => {
+    const value = typeof v === "string" ? Number.parseFloat(v.replace(/%/g, "")) : v;
+    return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const findNumber = (source: unknown, keys: string[]): number | null => {
+    if (!source || typeof source !== "object") return null;
+    for (const [key, value] of Object.entries(source as Raw)) {
+      if (keys.some((candidate) => key.toLowerCase().replace(/[_-]/g, "").includes(candidate))) {
+        const parsed = positive(value);
+        if (parsed !== null && parsed <= 100) return parsed;
+      }
+      const nested = findNumber(value, keys);
+      if (nested !== null) return nested;
+    }
+    return null;
+  };
   const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
-  const team1Probability =
-    probability?.team1 ?? probability?.team1Percentage ?? mini.team1WinProbability;
-  const team2Probability =
-    probability?.team2 ?? probability?.team2Percentage ?? mini.team2WinProbability;
+  const team1Probability = positive(probability?.team1 ?? probability?.team1Percentage) ??
+    positive(mini.team1WinProbability) ?? findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
+  const team2Probability = positive(probability?.team2 ?? probability?.team2Percentage) ??
+    positive(mini.team2WinProbability) ?? findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
   const winProbability =
-    typeof team1Probability === "number" && typeof team2Probability === "number"
+    team1Probability !== null && team2Probability !== null
       ? { team1: team1Probability, team2: team2Probability }
       : null;
 
   return {
     inningsId: num(mini.inningsId),
-    currentRunRate: typeof mini.currentRunRate === "number" ? mini.currentRunRate : null,
+    currentRunRate: positive(mini.currentRunRate),
     requiredRunRate: positive(mini.requiredRunRate),
     target: positive(mini.target),
     runsToWin: positive(mini.remRunsToWin),
@@ -225,8 +240,19 @@ export const getMatchCenter = createServerFn({ method: "GET" })
         team2Id: num(header.team2?.id),
         innings,
         live: (() => {
-          const live = normalizeLive(comm?.miniscore);
-          if (!live) return null;
+          const normalized = normalizeLive(comm?.miniscore);
+          if (!normalized) return null;
+          const current = innings.find((entry) => entry.inningsId === normalized.inningsId) ?? innings.at(-1);
+          if (!current) return normalized;
+          const previous = innings
+            .filter((entry) => entry.inningsId !== current.inningsId)
+            .sort((a, b) => b.inningsId - a.inningsId)[0];
+          const live = {
+            ...normalized,
+            inningsId: current.inningsId,
+            target: normalized.target ?? (previous && current.inningsId > previous.inningsId ? previous.runs + 1 : null),
+            runsToWin: normalized.runsToWin ?? (normalized.target && current ? Math.max(0, normalized.target - current.runs) : null),
+          };
           if (live.winProbability) return live;
           if (prediction) return { ...live, winProbability: prediction };
           return { ...live, winProbability: estimateChaseProbability(innings, live) };
