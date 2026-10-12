@@ -229,6 +229,16 @@ function Index() {
         </div>
       )}
 
+      <div className="mt-10 flex justify-center" aria-label="Advertisement">
+        <iframe
+          data-aa="2458278"
+          src="//acceptable.a-ads.com/2458278/?size=Adaptive"
+          title="Advertisement"
+          loading="lazy"
+          className="h-[90px] w-full max-w-[560px] border-0"
+        />
+      </div>
+
       <footer className="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
         Data sourced from cricbuzz.com · Instant live updates when available
       </footer>
