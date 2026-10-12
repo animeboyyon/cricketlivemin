@@ -3,6 +3,7 @@ import { z } from "zod";
 import type {
   BatterRow,
   BowlerRow,
+  CommentaryEntry,
   FallOfWicket,
   InningsScorecard,
   LiveSituation,
@@ -155,6 +156,84 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
   };
 }
 
+const MAX_COMMENTARY = 60;
+
+const stripMarkup = (text: unknown) =>
+  String(text ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .trim();
+
+function parseBalls(summary: unknown): string[] {
+  return String(summary ?? "")
+    .split(/[\s|]+/)
+    .filter((token) => token !== "" && !/^\.+$/.test(token));
+}
+
+function parseRecentBalls(recentOvsStats: unknown): string[] {
+  return parseBalls(recentOvsStats).slice(-6);
+}
+
+function normalizeCommentary(raw: unknown): CommentaryEntry[] {
+  return values(raw)
+    .filter((entry) => typeof entry.timestamp === "number")
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .flatMap((entry, index): CommentaryEntry[] => {
+      const id = `${entry.timestamp}-${index}`;
+      if (entry.commType === "over-separator" && entry.overSeparator) {
+        const sep = entry.overSeparator as Raw;
+        const runs = num(sep.overRuns);
+        const team = sep.batTeamObj?.teamName;
+        const score = sep.batTeamObj?.teamScore;
+        return [
+          {
+            id,
+            kind: "over",
+            over: null,
+            text: `End of over ${num(sep.overNumber)}`,
+            detail: [
+              `${runs} ${runs === 1 ? "run" : "runs"}`,
+              team && score ? `${team} ${score}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            balls: parseBalls(sep.overSummary),
+            highlight: null,
+          },
+        ];
+      }
+      const text = stripMarkup(entry.commText);
+      if (!text) return [];
+      const events = (Array.isArray(entry.event) ? entry.event : []).map((e: unknown) =>
+        String(e).toLowerCase(),
+      );
+      const highlight =
+        events.includes("wicket") || /,\s*OUT\b/.test(text)
+          ? "wicket"
+          : events.includes("six") || /,\s*SIX runs?\b/.test(text)
+            ? "six"
+            : events.includes("four") || /,\s*FOUR runs?\b/.test(text)
+              ? "four"
+              : null;
+      const hasBall = typeof entry.ballMetric === "number";
+      return [
+        {
+          id,
+          kind: hasBall ? "ball" : "note",
+          over: hasBall ? String(entry.ballMetric) : null,
+          text,
+          highlight,
+        },
+      ];
+    })
+    .slice(0, MAX_COMMENTARY);
+}
+
 async function fetchJson(url: string): Promise<Raw | null> {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) return null;
@@ -238,6 +317,8 @@ export const getMatchCenter = createServerFn({ method: "GET" })
       team2Id: 0,
       innings: [],
       live: null,
+      recentBalls: [],
+      commentary: [],
       error: null,
     };
     try {
@@ -284,6 +365,8 @@ export const getMatchCenter = createServerFn({ method: "GET" })
           if (prediction) return { ...live, winProbability: prediction };
           return { ...live, winProbability: estimateChaseProbability(innings, live) };
         })(),
+        recentBalls: parseRecentBalls(comm?.miniscore?.recentOvsStats),
+        commentary: normalizeCommentary(comm?.matchCommentary),
         error: null,
       };
     } catch (e) {

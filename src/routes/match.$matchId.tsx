@@ -4,6 +4,8 @@ import { ArrowLeft, MapPin, Trophy, Calendar, Activity, ListOrdered } from "luci
 import { getCricketHome } from "@/lib/cricket.functions";
 import { getMatchCenter } from "@/lib/scorecard.functions";
 import { MatchStats, MatchWorm } from "@/components/match/MatchAnalytics";
+import { BallDots } from "@/components/match/BallDots";
+import { MatchTabs } from "@/components/match/Commentary";
 import { LiveMatchSummary } from "@/components/match/LiveMatchSummary";
 import { Scorecard } from "@/components/match/Scorecard";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -261,6 +263,7 @@ function MatchDetail() {
             <Activity className="h-3 w-3" /> Current Status
           </div>
           <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">{info.status}</p>
+          {isLive && <BallDots balls={center?.recentBalls ?? []} />}
         </div>
       </header>
 
@@ -300,7 +303,7 @@ function MatchDetail() {
           <div className="h-80 animate-pulse rounded-2xl bg-card" />
         </div>
       ) : center && center.innings.length > 0 ? (
-        <>
+        <MatchTabs commentary={center.commentary}>
           <div className="mb-4 sm:mb-6">
             <LiveMatchSummary
               center={center}
@@ -352,7 +355,7 @@ function MatchDetail() {
               team2Label={info.team2.teamSName}
             />
           </div>
-        </>
+        </MatchTabs>
       ) : (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           {center?.error
