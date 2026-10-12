@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { MatchCard } from "@/components/MatchCard";
+import { UpdatedAt } from "@/components/UpdatedAt";
 import type { MatchEntry } from "@/types/cricket";
 
 export const Route = createFileRoute("/")({
@@ -82,6 +83,8 @@ function Index() {
   const [filter, setFilter] = useState<Filter>("all");
 
   const matches: MatchEntry[] = data?.matches ?? [];
+  const fetchedAt = data?.fetchedAt ?? (dataUpdatedAt || null);
+  const isStale = Boolean(data?.stale) || Boolean(error && data);
 
   const counts = useMemo(() => {
     let live = 0,
@@ -149,14 +152,17 @@ function Index() {
               updates when available.
             </p>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            {fetchedAt && <UpdatedAt timestamp={fetchedAt} stale={isStale} />}
+          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -200,14 +206,9 @@ function Index() {
         </div>
       </header>
 
-      {error && (
+      {matches.length === 0 && (error || data?.error) && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load matches. {(error as Error).message}
-        </div>
-      )}
-      {data?.error && (
-        <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          {data.error}
+          Failed to load matches. {data?.error ?? (error as Error).message}
         </div>
       )}
 

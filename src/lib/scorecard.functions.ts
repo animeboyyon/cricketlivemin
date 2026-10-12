@@ -200,7 +200,9 @@ function estimateChaseProbability(innings: InningsScorecard[], live: LiveSituati
   const pressure = requiredRate / Math.max(scoringRate, 1);
   const chase = Math.max(5, Math.min(95, 58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20));
   const battingTeamIsTeam1 = current.battingTeamId === (previous?.battingTeamId ?? 0);
-  return battingTeamIsTeam1 ? { team1: Math.round(chase), team2: Math.round(100 - chase) } : { team1: Math.round(100 - chase), team2: Math.round(chase) };
+  return battingTeamIsTeam1
+    ? { team1: Math.round(chase), team2: Math.round(100 - chase), estimated: true }
+    : { team1: Math.round(100 - chase), team2: Math.round(chase), estimated: true };
 }
 
 export const getMatchCenter = createServerFn({ method: "GET" })

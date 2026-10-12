@@ -60,6 +60,7 @@ export interface InningsScorecard {
 export interface WinProbability {
   team1: number;
   team2: number;
+  estimated?: boolean;
 }
 
 export interface LiveSituation {
