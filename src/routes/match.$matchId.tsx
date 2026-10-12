@@ -361,37 +361,6 @@ function MatchDetail() {
         </p>
       )}
 
-      <div
-        className="mt-6 rounded-2xl border border-border bg-card/60 px-3 py-3 sm:mt-8"
-        aria-label="Advertisement"
-      >
-        <div
-          id="frame"
-          style={{
-            width: "100%",
-            margin: "auto",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <iframe
-            data-aa="2458278"
-            src="https://acceptable.a-ads.com/2458278/?size=Adaptive"
-            title="Advertisement"
-            style={{
-              border: 0,
-              padding: 0,
-              width: "70%",
-              height: "auto",
-              minHeight: 90,
-              overflow: "hidden",
-              display: "block",
-              margin: "auto",
-            }}
-          />
-        </div>
-      </div>
-
       <section className="mt-6 grid gap-4 sm:grid-cols-2">
         {info.venueInfo && (
           <div className="rounded-2xl border border-border bg-card p-5">
