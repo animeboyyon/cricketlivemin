@@ -3,22 +3,51 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Trophy, Calendar, Activity, ListOrdered } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { getMatchCenter } from "@/lib/scorecard.functions";
+import { getMatchShareMeta } from "@/lib/share.functions";
 import { MatchStats, MatchWorm } from "@/components/match/MatchAnalytics";
+import { BallDots } from "@/components/match/BallDots";
+import { MatchTabs } from "@/components/match/Commentary";
 import { LiveMatchSummary } from "@/components/match/LiveMatchSummary";
+import { NotifyButton } from "@/components/match/NotifyButton";
 import { Scorecard } from "@/components/match/Scorecard";
-import { TeamLogo } from "@/components/TeamLogo";
-import type { MatchEntry, Innings, TeamScore } from "@/types/cricket";
+import { ShareButton } from "@/components/match/ShareButton";
+import { TeamSheet } from "@/components/match/TeamSheet";
+import type { MatchEntry, Innings, Team, TeamScore } from "@/types/cricket";
 
 export const Route = createFileRoute("/match/$matchId")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Match ${params.matchId} — Cricket Live Scoreboard` },
-      {
-        name: "description",
-        content: "Live cricket match details, innings breakdown, and venue info.",
-      },
-    ],
-  }),
+  loader: async ({ params }) => {
+    const matchId = Number(params.matchId);
+    if (!Number.isInteger(matchId) || matchId <= 0) return null;
+    try {
+      return await getMatchShareMeta({ data: { matchId } });
+    } catch {
+      return null;
+    }
+  },
+  head: ({ params, loaderData }) => {
+    const title = loaderData?.title ?? `Match ${params.matchId} — Cricket Live Scoreboard`;
+    const description =
+      loaderData?.description ?? "Live cricket match details, innings breakdown, and venue info.";
+    const origin = loaderData?.origin ?? "";
+    const meta = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (origin) {
+      meta.push(
+        { property: "og:url", content: `${origin}/match/${params.matchId}` },
+        { property: "og:image", content: `${origin}/og-image.png` },
+        { name: "twitter:image", content: `${origin}/og-image.png` },
+      );
+    }
+    return { meta };
+  },
   component: MatchDetail,
   notFoundComponent: () => (
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
@@ -59,24 +88,22 @@ function formatInnings(inn?: Innings) {
 }
 
 function InningsCard({
-  teamName,
-  short,
-  imageId,
+  team,
+  matchId,
   scores,
 }: {
-  teamName: string;
-  short: string;
-  imageId?: number;
+  team: Team;
+  matchId: number;
   scores?: TeamScore;
 }) {
   const innings = [scores?.inngs1, scores?.inngs2].filter(Boolean) as Innings[];
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="mb-3 flex items-center gap-3 sm:mb-4">
-        <TeamLogo name={teamName} short={short} imageId={imageId} />
+        <TeamSheet team={team} currentMatchId={matchId} />
         <div>
-          <h3 className="text-lg font-bold text-foreground">{teamName}</h3>
-          <p className="text-xs text-muted-foreground">{short}</p>
+          <h3 className="text-lg font-bold text-foreground">{team.teamName}</h3>
+          <p className="text-xs text-muted-foreground">{team.teamSName}</p>
         </div>
       </div>
       {innings.length === 0 ? (
@@ -103,27 +130,21 @@ function InningsCard({
 }
 
 function CombinedInningsCard({
-  team1Name,
-  team1Short,
-  team1ImageId,
+  team1,
   team1Score,
-  team2Name,
-  team2Short,
-  team2ImageId,
+  team2,
   team2Score,
+  matchId,
 }: {
-  team1Name: string;
-  team1Short: string;
-  team1ImageId?: number;
+  team1: Team;
   team1Score?: TeamScore;
-  team2Name: string;
-  team2Short: string;
-  team2ImageId?: number;
+  team2: Team;
   team2Score?: TeamScore;
+  matchId: number;
 }) {
   const rows = [
-    { name: team1Name, short: team1Short, imageId: team1ImageId, score: team1Score },
-    { name: team2Name, short: team2Short, imageId: team2ImageId, score: team2Score },
+    { team: team1, name: team1.teamName, short: team1.teamSName, score: team1Score },
+    { team: team2, name: team2.teamName, short: team2.teamSName, score: team2Score },
   ];
 
   return (
@@ -136,7 +157,7 @@ function CombinedInningsCard({
               key={team.short}
               className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-3 sm:px-4"
             >
-              <TeamLogo name={team.name} short={team.short} imageId={team.imageId} size="sm" />
+              <TeamSheet team={team.team} currentMatchId={matchId} size="sm" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
@@ -244,16 +265,28 @@ function MatchDetail() {
               {info.matchDesc} · {info.matchFormat}
             </p>
           </div>
-          {isLive ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary">
-              <span className="live-dot h-2 w-2 rounded-full bg-primary" />
-              Live
-            </div>
-          ) : (
-            <div className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {info.state}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {isLive ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary">
+                <span className="live-dot h-2 w-2 rounded-full bg-primary" />
+                Live
+              </div>
+            ) : (
+              <div className="inline-flex rounded-full bg-muted px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {info.state}
+              </div>
+            )}
+            <NotifyButton
+              matchLabel={`${info.team1.teamSName} v ${info.team2.teamSName}`}
+              state={info.state}
+              status={info.status}
+              center={center}
+            />
+            <ShareButton
+              title={`${info.team1.teamSName} vs ${info.team2.teamSName}`}
+              text={info.status}
+            />
+          </div>
         </div>
 
         <div className="mt-5 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-4">
@@ -261,36 +294,24 @@ function MatchDetail() {
             <Activity className="h-3 w-3" /> Current Status
           </div>
           <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">{info.status}</p>
+          {isLive && <BallDots balls={center?.recentBalls ?? []} />}
         </div>
       </header>
 
       {isLimitedOvers ? (
         <section className="mt-4 sm:mt-6">
           <CombinedInningsCard
-            team1Name={info.team1.teamName}
-            team1Short={info.team1.teamSName}
-            team1ImageId={info.team1.imageId}
+            team1={info.team1}
             team1Score={score?.team1Score}
-            team2Name={info.team2.teamName}
-            team2Short={info.team2.teamSName}
-            team2ImageId={info.team2.imageId}
+            team2={info.team2}
             team2Score={score?.team2Score}
+            matchId={id}
           />
         </section>
       ) : (
         <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
-          <InningsCard
-            teamName={info.team1.teamName}
-            short={info.team1.teamSName}
-            imageId={info.team1.imageId}
-            scores={score?.team1Score}
-          />
-          <InningsCard
-            teamName={info.team2.teamName}
-            short={info.team2.teamSName}
-            imageId={info.team2.imageId}
-            scores={score?.team2Score}
-          />
+          <InningsCard team={info.team1} matchId={id} scores={score?.team1Score} />
+          <InningsCard team={info.team2} matchId={id} scores={score?.team2Score} />
         </section>
       )}
 
@@ -300,7 +321,7 @@ function MatchDetail() {
           <div className="h-80 animate-pulse rounded-2xl bg-card" />
         </div>
       ) : center && center.innings.length > 0 ? (
-        <>
+        <MatchTabs commentary={center.commentary}>
           <div className="mb-4 sm:mb-6">
             <LiveMatchSummary
               center={center}
@@ -352,7 +373,7 @@ function MatchDetail() {
               team2Label={info.team2.teamSName}
             />
           </div>
-        </>
+        </MatchTabs>
       ) : (
         <p className="mt-6 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           {center?.error

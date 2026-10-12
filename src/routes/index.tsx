@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
-import { MatchCard } from "@/components/MatchCard";
+import { SeriesGroup } from "@/components/SeriesGroup";
+import { groupBySeries } from "@/lib/series";
+import { UpdatedAt } from "@/components/UpdatedAt";
 import type { MatchEntry } from "@/types/cricket";
 
 export const Route = createFileRoute("/")({
@@ -80,8 +82,11 @@ function Index() {
   });
 
   const [filter, setFilter] = useState<Filter>("all");
+  const [seriesFilter, setSeriesFilter] = useState<number | null>(null);
 
-  const matches: MatchEntry[] = data?.matches ?? [];
+  const matches = useMemo<MatchEntry[]>(() => data?.matches ?? [], [data?.matches]);
+  const fetchedAt = data?.fetchedAt ?? (dataUpdatedAt || null);
+  const isStale = Boolean(data?.stale) || Boolean(error && data);
 
   const counts = useMemo(() => {
     let live = 0,
@@ -97,16 +102,14 @@ function Index() {
   }, [matches]);
 
   const filtered = useMemo(() => {
-    const visibleMatches =
-      filter === "all"
-        ? matches
-        : matches.filter((m) => {
-            const s = m.match.matchInfo.state;
-            if (filter === "live") return LIVE_STATES.includes(s);
-            if (filter === "upcoming") return s === "Preview" || s === "Upcoming";
-            if (filter === "complete") return s === "Complete";
-            return true;
-          });
+    const visibleMatches = matches.filter((m) => {
+      const { state, seriesId } = m.match.matchInfo;
+      if (seriesFilter !== null && seriesId !== seriesFilter) return false;
+      if (filter === "live") return LIVE_STATES.includes(state);
+      if (filter === "upcoming") return state === "Preview" || state === "Upcoming";
+      if (filter === "complete") return state === "Complete";
+      return true;
+    });
 
     if (filter !== "all") return visibleMatches;
 
@@ -127,7 +130,20 @@ function Index() {
           a.index - b.index,
       )
       .map(({ match }) => match);
-  }, [matches, filter]);
+  }, [matches, filter, seriesFilter]);
+
+  const groups = useMemo(() => groupBySeries(filtered), [filtered]);
+
+  const seriesOptions = useMemo(
+    () =>
+      groupBySeries(matches).map(({ seriesId, seriesName }) => ({
+        seriesId,
+        seriesName,
+      })),
+    [matches],
+  );
+  const activeSeries =
+    seriesFilter !== null && seriesOptions.some((s) => s.seriesId === seriesFilter);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -149,17 +165,24 @@ function Index() {
               updates when available.
             </p>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            {fetchedAt && <UpdatedAt timestamp={fetchedAt} stale={isStale} />}
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label="Filter matches"
+          className="-mx-4 mt-6 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+        >
           {(
             [
               ["all", "All", counts.all],
@@ -173,7 +196,8 @@ function Index() {
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                aria-pressed={active}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                   active
                     ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
                     : "bg-card text-muted-foreground hover:text-foreground"
@@ -197,17 +221,35 @@ function Index() {
               </button>
             );
           })}
+          {seriesOptions.length > 1 && (
+            <>
+              <span className="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+              {seriesOptions.map(({ seriesId, seriesName }) => {
+                const active = activeSeries && seriesFilter === seriesId;
+                return (
+                  <button
+                    key={seriesId}
+                    onClick={() => setSeriesFilter(active ? null : seriesId)}
+                    aria-pressed={active}
+                    title={seriesName}
+                    className={`inline-flex max-w-[12rem] shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                      active
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className="truncate">{seriesName}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
       </header>
 
-      {error && (
+      {matches.length === 0 && (error || data?.error) && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load matches. {(error as Error).message}
-        </div>
-      )}
-      {data?.error && (
-        <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          {data.error}
+          Failed to load matches. {data?.error ?? (error as Error).message}
         </div>
       )}
 
@@ -222,9 +264,9 @@ function Index() {
           <p className="text-muted-foreground">No matches in this category right now.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((m) => (
-            <MatchCard key={m.match.matchInfo.matchId} entry={m} />
+        <div className="space-y-8">
+          {groups.map((group) => (
+            <SeriesGroup key={group.seriesId} group={group} />
           ))}
         </div>
       )}

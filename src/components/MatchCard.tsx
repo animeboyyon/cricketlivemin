@@ -1,6 +1,6 @@
 import type { MatchEntry } from "@/types/cricket";
 import { Link } from "@tanstack/react-router";
-import { MapPin, Trophy } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { TeamLogo } from "@/components/TeamLogo";
 
 function formatScore(score?: { runs: number; wickets?: number; overs?: number }) {
@@ -90,11 +90,7 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
     >
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Trophy className="h-3 w-3" />
-            <span className="truncate">{info.seriesName}</span>
-          </div>
-          <div className="mt-1 text-xs text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {info.matchDesc} · {info.matchFormat}
           </div>
         </div>

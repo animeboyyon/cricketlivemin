@@ -60,6 +60,7 @@ export interface InningsScorecard {
 export interface WinProbability {
   team1: number;
   team2: number;
+  estimated?: boolean;
 }
 
 export interface LiveSituation {
@@ -71,6 +72,16 @@ export interface LiveSituation {
   winProbability: WinProbability | null;
 }
 
+export interface CommentaryEntry {
+  id: string;
+  kind: "ball" | "over" | "note";
+  over: string | null;
+  text: string;
+  detail?: string;
+  balls?: string[];
+  highlight: "four" | "six" | "wicket" | null;
+}
+
 export interface MatchCenter {
   matchId: number;
   format: string;
@@ -80,5 +91,7 @@ export interface MatchCenter {
   team2Id: number;
   innings: InningsScorecard[];
   live: LiveSituation | null;
+  recentBalls: string[];
+  commentary: CommentaryEntry[];
   error: string | null;
 }

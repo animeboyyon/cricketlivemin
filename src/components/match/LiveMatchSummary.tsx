@@ -107,7 +107,7 @@ export function LiveMatchSummary({
           <div className="sm:pl-5">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Win probability
+                Win probability{probability?.estimated ? " · est." : ""}
               </p>
               <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             </div>
