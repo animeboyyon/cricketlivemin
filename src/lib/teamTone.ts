@@ -48,9 +48,9 @@ export function getTeamTones(
 }
 
 export const toneRowClass: Record<TeamTone, string> = {
-  batting: "bg-primary/10 ring-1 ring-primary/30",
-  winner: "bg-primary/10 ring-1 ring-primary/30",
-  loser: "opacity-60",
+  batting: "",
+  winner: "",
+  loser: "opacity-55",
   neutral: "",
 };
 
@@ -62,15 +62,10 @@ export const toneScoreClass: Record<TeamTone, string> = {
 };
 
 export const toneLabel: Partial<Record<TeamTone, string>> = {
-  batting: "Batting",
   winner: "Won",
 };
 
-export function formatBadgeClass(format: string) {
-  const f = format.toUpperCase();
-  if (f.includes("TEST")) return "bg-chart-5/15 text-chart-5";
-  if (f.includes("ODI")) return "bg-chart-3/15 text-chart-3";
-  if (f.includes("T20") || f.includes("T10")) return "bg-accent/15 text-accent";
+export function formatBadgeClass(_format: string) {
   return "bg-muted text-muted-foreground";
 }
 
@@ -106,13 +101,13 @@ export function getStatusKind(status: string, state: string): StatusKind {
 }
 
 export const statusClass: Record<StatusKind, string> = {
-  chase: "bg-chart-3/15 text-chart-3 ring-1 ring-chart-3/30",
-  won: "bg-primary/15 text-primary ring-1 ring-primary/30",
-  lead: "bg-accent/15 text-accent ring-1 ring-accent/30",
-  trail: "bg-chart-4/15 text-chart-4 ring-1 ring-chart-4/30",
-  toss: "bg-muted text-muted-foreground",
-  draw: "bg-chart-5/15 text-chart-5 ring-1 ring-chart-5/30",
-  live: "bg-primary/10 text-primary ring-1 ring-primary/25",
-  upcoming: "bg-chart-3/10 text-chart-3 ring-1 ring-chart-3/25",
-  plain: "bg-muted/50 text-foreground/90",
+  chase: "text-chart-3",
+  won: "text-primary",
+  lead: "text-foreground",
+  trail: "text-chart-4",
+  toss: "text-muted-foreground",
+  draw: "text-muted-foreground",
+  live: "text-foreground",
+  upcoming: "text-muted-foreground",
+  plain: "text-foreground/80",
 };

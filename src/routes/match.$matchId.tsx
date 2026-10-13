@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Trophy, Calendar, Activity, ListOrdered } from "lucide-react";
+import { ArrowLeft, MapPin, Trophy, Calendar, ListOrdered } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { getMatchCenter } from "@/lib/scorecard.functions";
 import { getMatchShareMeta } from "@/lib/share.functions";
@@ -17,7 +17,9 @@ import { Score } from "@/components/Score";
 import { cn } from "@/lib/utils";
 import {
   LIVE_STATES,
+  getStatusKind,
   getTeamTones,
+  statusClass,
   toneLabel,
   toneRowClass,
   toneScoreClass,
@@ -115,17 +117,14 @@ function ScoreboardCard({
   ];
 
   return (
-    <div className="space-y-1.5 rounded-xl border border-border bg-card p-1.5 shadow-[var(--shadow-card)] sm:p-2">
+    <div className="divide-y divide-border rounded-xl border border-border bg-card px-3 sm:px-4">
       {rows.map(({ team, score, tone }) => {
         const innings = [score?.inngs1, score?.inngs2].filter(Boolean) as Innings[];
         const label = toneLabel[tone];
         return (
           <div
             key={team.teamSName}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2",
-              toneRowClass[tone],
-            )}
+            className={cn("flex items-center gap-2.5 py-2 sm:py-2.5", toneRowClass[tone])}
           >
             <TeamSheet team={team} currentMatchId={matchId} size="sm" />
             <div className="min-w-0 flex-1">
@@ -134,8 +133,15 @@ function ScoreboardCard({
               </h3>
               <p className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground sm:text-xs">
                 {team.teamSName}
+                {tone === "batting" && (
+                  <span
+                    className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                    role="img"
+                    aria-label="Batting"
+                  />
+                )}
                 {label && (
-                  <span className="rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
                     {label}
                   </span>
                 )}
@@ -230,67 +236,59 @@ function MatchDetail() {
         tones={getTeamTones(info, score)}
         isLive={isLive}
       />
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground sm:text-sm"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to scoreboard
-      </Link>
-
-      <header className="mt-2 rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)] sm:mt-4 sm:p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-accent">
-              <Trophy className="h-3 w-3 shrink-0" />
-              <span className="truncate">{info.seriesName}</span>
-            </div>
-            <h1 className="mt-0.5 text-lg font-black leading-tight text-foreground sm:text-2xl">
-              {info.team1.teamName} <span className="text-muted-foreground">vs</span>{" "}
-              {info.team2.teamName}
-            </h1>
-            <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">
-              {info.matchDesc} · <span className="font-semibold text-chart-5">{info.matchFormat}</span>
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {isLive ? (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-                <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" />
-                Live
-              </div>
-            ) : (
-              <div className="inline-flex rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {info.state}
-              </div>
-            )}
-            <NotifyButton
-              matchLabel={`${info.team1.teamSName} v ${info.team2.teamSName}`}
-              state={info.state}
-              status={info.status}
-              center={center}
-            />
-            <ShareButton
-              title={`${info.team1.teamSName} vs ${info.team2.teamSName}`}
-              text={info.status}
-            />
-          </div>
+      <div className="flex items-center justify-between gap-2">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition hover:text-foreground sm:text-sm"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back
+        </Link>
+        <div className="flex items-center gap-1.5">
+          <NotifyButton
+            matchLabel={`${info.team1.teamSName} v ${info.team2.teamSName}`}
+            state={info.state}
+            status={info.status}
+            center={center}
+          />
+          <ShareButton
+            title={`${info.team1.teamSName} vs ${info.team2.teamSName}`}
+            text={info.status}
+          />
         </div>
+      </div>
 
-        <div
+      <header className="mt-2 rounded-xl border border-border bg-card p-3 sm:mt-4 sm:p-4">
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Trophy className="h-3 w-3 shrink-0" />
+            <span className="truncate">{info.seriesName}</span>
+          </div>
+          {isLive ? (
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+              <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" />
+              Live
+            </span>
+          ) : (
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">
+              {info.state}
+            </span>
+          )}
+        </div>
+        <h1 className="mt-1 text-lg font-black leading-tight text-foreground sm:text-2xl">
+          {info.team1.teamName} <span className="font-semibold text-muted-foreground">vs</span>{" "}
+          {info.team2.teamName}
+        </h1>
+        <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">
+          {info.matchDesc} · {info.matchFormat}
+        </p>
+        <p
           className={cn(
-            "mt-2 flex items-start gap-2 rounded-lg border-l-4 px-2.5 py-1.5",
-            isLive
-              ? "border-chart-3 bg-chart-3/10"
-              : "border-accent bg-accent/10",
+            "mt-2 border-t border-border pt-2 text-[13px] font-semibold leading-snug sm:text-sm",
+            statusClass[getStatusKind(info.status, info.state)],
           )}
         >
-          <Activity
-            className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isLive ? "text-chart-3" : "text-accent")}
-          />
-          <p className="text-[13px] font-semibold leading-snug text-foreground sm:text-sm">
-            {info.status}
-          </p>
-        </div>
+          {info.status}
+        </p>
       </header>
 
       <section ref={scoreboardRef} className="mt-2 sm:mt-3">
@@ -330,7 +328,7 @@ function MatchDetail() {
                 id="scorecard-heading"
                 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
               >
-                <ListOrdered className="h-3.5 w-3.5 text-accent" /> Scorecard
+                <ListOrdered className="h-3.5 w-3.5" /> Scorecard
               </h2>
               {isLive && (
                 <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -374,16 +372,16 @@ function MatchDetail() {
 
       <section className="mt-3 grid gap-2.5 sm:grid-cols-2">
         {info.venueInfo && (
-          <div className="rounded-xl border border-border border-l-4 border-l-chart-4 bg-card px-3 py-2.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-chart-4">
+          <div className="rounded-xl border border-border bg-card px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <MapPin className="h-3 w-3" /> Venue
             </div>
             <p className="mt-1 text-sm font-semibold text-foreground">{info.venueInfo.ground}</p>
             <p className="text-xs text-muted-foreground">{info.venueInfo.city}</p>
           </div>
         )}
-        <div className="rounded-xl border border-border border-l-4 border-l-chart-5 bg-card px-3 py-2.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-chart-5">
+        <div className="rounded-xl border border-border bg-card px-3 py-2.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <Calendar className="h-3 w-3" /> Schedule
           </div>
           <p className="mt-1 text-sm font-semibold text-foreground">

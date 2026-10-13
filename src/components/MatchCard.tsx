@@ -9,7 +9,6 @@ import {
   formatBadgeClass,
   getStatusKind,
   getTeamTones,
-  stateAccentClass,
   statusClass,
   toneLabel,
   toneRowClass,
@@ -55,23 +54,26 @@ function TeamRow({
 }) {
   const label = toneLabel[tone];
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-2 rounded-lg px-1.5 py-1",
-        toneRowClass[tone],
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-2">
+    <div className={cn("flex items-center justify-between gap-2 py-0.5", toneRowClass[tone])}>
+      <div className="flex min-w-0 items-center gap-2.5">
         <TeamLogo name={name} short={short} imageId={imageId} size="sm" />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold leading-tight text-foreground">{name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-semibold leading-tight text-foreground">
+              {name}
+            </span>
+            {tone === "batting" && (
+              <span
+                className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                role="img"
+                aria-label="Batting"
+              />
+            )}
+          </div>
           <div className="flex items-center gap-1.5 text-[10px] leading-tight text-muted-foreground">
             {short}
             {label && (
-              <span className="inline-flex items-center gap-1 rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
-                {tone === "batting" && (
-                  <span className="live-dot h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
-                )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
                 {label}
               </span>
             )}
@@ -103,8 +105,7 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
       to="/match/$matchId"
       params={{ matchId: String(info.matchId) }}
       className={cn(
-        "group relative block overflow-hidden rounded-xl border border-l-4 border-border bg-card p-2.5 shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-glow)] sm:p-3.5",
-        stateAccentClass(info.state),
+        "group relative block overflow-hidden rounded-xl border border-border bg-card p-3 transition hover:border-primary/40 sm:p-3.5",
       )}
     >
       <header className="mb-1.5 flex items-center justify-between gap-2">
@@ -139,18 +140,13 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
         />
       </div>
 
-      <footer className="mt-2 space-y-1">
-        <p
-          className={cn(
-            "rounded-md px-2 py-1 text-xs font-semibold leading-snug sm:text-[13px]",
-            statusClass[kind],
-          )}
-        >
+      <footer className="mt-2 space-y-1 border-t border-border pt-2">
+        <p className={cn("text-xs font-semibold leading-snug sm:text-[13px]", statusClass[kind])}>
           {info.status}
         </p>
         {info.venueInfo && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <MapPin className="h-3 w-3 shrink-0 text-chart-4" />
+            <MapPin className="h-3 w-3 shrink-0" />
             <span className="truncate">
               {info.venueInfo.ground}, {info.venueInfo.city}
             </span>

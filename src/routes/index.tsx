@@ -31,16 +31,16 @@ type Filter = "all" | "live" | "upcoming" | "complete";
 
 const filterActiveClass: Record<Filter, string> = {
   all: "bg-foreground text-background",
-  live: "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]",
-  upcoming: "bg-chart-3 text-primary-foreground",
-  complete: "bg-chart-5 text-primary-foreground",
+  live: "bg-foreground text-background",
+  upcoming: "bg-foreground text-background",
+  complete: "bg-foreground text-background",
 };
 
 const filterIdleClass: Record<Filter, string> = {
   all: "bg-card text-muted-foreground hover:text-foreground",
-  live: "bg-primary/10 text-primary hover:bg-primary/20",
-  upcoming: "bg-chart-3/10 text-chart-3 hover:bg-chart-3/20",
-  complete: "bg-chart-5/10 text-chart-5 hover:bg-chart-5/20",
+  live: "bg-card text-muted-foreground hover:text-foreground",
+  upcoming: "bg-card text-muted-foreground hover:text-foreground",
+  complete: "bg-card text-muted-foreground hover:text-foreground",
 };
 
 const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"];
@@ -161,17 +161,11 @@ function Index() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8 lg:px-8">
-      <header className="mb-1 flex items-end justify-between gap-3">
+      <header className="mb-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-            <Activity className="h-3 w-3" />
-            Live Scoreboard
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-4xl">
-            Cricket{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Live
-            </span>
+          <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
+            <Activity className="h-5 w-5 text-primary sm:h-7 sm:w-7" aria-hidden="true" />
+            Cricket <span className="text-primary">Live</span>
           </h1>
           <p className="mt-1 hidden max-w-xl text-sm text-muted-foreground sm:block">
             Real-time scores, fixtures, and results from across the cricketing world.
@@ -207,7 +201,7 @@ function Index() {
                 {key === "live" && (
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
-                      active ? "bg-primary-foreground" : "bg-primary live-dot"
+                      active ? "bg-primary" : "bg-primary live-dot"
                     }`}
                   />
                 )}

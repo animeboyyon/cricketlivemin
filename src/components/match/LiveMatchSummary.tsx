@@ -6,10 +6,9 @@ function unavailable(value: string) {
   return <span className="text-muted-foreground">{value}</span>;
 }
 
-function SectionLabel({ children, dot }: { children: string; dot: string }) {
+function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden="true" />
+    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
       {children}
     </p>
   );
@@ -96,7 +95,7 @@ export function LiveMatchSummary({
   return (
     <section
       aria-labelledby="live-summary-heading"
-      className="rounded-xl border border-border bg-card/80 p-3 shadow-[var(--shadow-card)]"
+      className="rounded-xl border border-border bg-card p-3"
     >
       <h2
         id="live-summary-heading"
@@ -109,7 +108,7 @@ export function LiveMatchSummary({
         {hasLiveInnings && (
           <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-border">
             <div className="sm:pr-4">
-              <SectionLabel dot="bg-primary">Batting</SectionLabel>
+              <SectionLabel>Batting</SectionLabel>
               {batters.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {batters.map((batter, index) => (
@@ -117,7 +116,7 @@ export function LiveMatchSummary({
                       <span
                         className={
                           index === 0
-                            ? "min-w-0 truncate text-sm font-semibold text-primary"
+                            ? "min-w-0 truncate text-sm font-semibold text-foreground"
                             : "min-w-0 truncate text-sm text-foreground"
                         }
                       >
@@ -139,10 +138,10 @@ export function LiveMatchSummary({
             </div>
 
             <div className="sm:pl-4">
-              <SectionLabel dot="bg-accent">Bowling</SectionLabel>
+              <SectionLabel>Bowling</SectionLabel>
               {hasBowler && bowler ? (
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-sm font-semibold text-accent">
+                  <span className="min-w-0 truncate text-sm font-semibold text-foreground">
                     {bowler.name}
                   </span>
                   <span className="shrink-0 font-mono text-sm tabular-nums text-foreground">
@@ -161,13 +160,13 @@ export function LiveMatchSummary({
 
         {hasLiveInnings && hasBalls && (
           <div>
-            <SectionLabel dot="bg-chart-5">This over</SectionLabel>
+            <SectionLabel>This over</SectionLabel>
             <BallDots balls={center.recentBalls} />
           </div>
         )}
 
         <div>
-          <SectionLabel dot="bg-chart-3">
+          <SectionLabel>
             {`Win probability${probability?.estimated ? " · est." : ""}`}
           </SectionLabel>
           <WinProbabilityBar

@@ -25,22 +25,23 @@ export function SeriesGroup({ group }: { group: SeriesGroupData }) {
         >
           <ChevronDown
             className={cn(
-              "h-4 w-4 shrink-0 text-accent transition-transform",
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
               !open && "-rotate-90",
             )}
             aria-hidden="true"
           />
-          <span className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-foreground/90">
+          <span className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {group.seriesName}
           </span>
           {liveCount > 0 && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-              <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-              {liveCount} live
-            </span>
+            <span
+              className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+              role="img"
+              aria-label={`${liveCount} live`}
+            />
           )}
           <span className="h-px flex-1 bg-border/60" aria-hidden="true" />
-          <span className="shrink-0 rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-muted-foreground">
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
             {group.matches.length}
           </span>
         </button>

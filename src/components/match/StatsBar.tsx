@@ -26,11 +26,8 @@ export function StatsBar({ items }: { items: StatItem[] }) {
             className={cn(
               "font-mono text-base font-bold tabular-nums sm:text-lg",
               item.tone === "primary" && "text-primary",
-              item.tone === "accent" && "text-accent",
-              item.tone === "warning" && "text-chart-3",
               item.tone === "danger" && "text-chart-4",
-              item.tone === "violet" && "text-chart-5",
-              (!item.tone || item.tone === "default") && "text-foreground",
+              item.tone !== "primary" && item.tone !== "danger" && "text-foreground",
             )}
           >
             {item.value}
