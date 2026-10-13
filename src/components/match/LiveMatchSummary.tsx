@@ -116,15 +116,22 @@ export function LiveMatchSummary({
                 <div
                   className="flex h-1.5 overflow-hidden rounded-full bg-muted"
                   role="img"
-                  aria-label={`${team1Label} ${probability.team1}% win probability, ${team2Label} ${probability.team2}% win probability`}
+                  aria-label={`${team1Label} ${probability.team1}% win probability, ${team2Label} ${probability.team2}% win probability${probability.draw ? `, draw ${probability.draw}%` : ""}`}
                 >
                   <div className="h-full bg-primary" style={{ width: `${probability.team1}%` }} />
+                  {probability.draw ? (
+                    <div
+                      className="h-full bg-muted-foreground/40"
+                      style={{ width: `${probability.draw}%` }}
+                    />
+                  ) : null}
                   <div className="h-full bg-accent" style={{ width: `${probability.team2}%` }} />
                 </div>
                 <div className="mt-2 flex justify-between gap-3 text-xs tabular-nums text-muted-foreground">
                   <span>
                     {team1Label} {probability.team1}%
                   </span>
+                  {probability.draw ? <span>Draw {probability.draw}%</span> : null}
                   <span>
                     {team2Label} {probability.team2}%
                   </span>

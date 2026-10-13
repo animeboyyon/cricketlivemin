@@ -11,7 +11,7 @@ const toneFor = (ball: string) => {
 export function BallDots({ balls }: { balls: string[] }) {
   if (balls.length === 0) return null;
   return (
-    <div className="mt-3 flex items-center gap-2">
+    <div className="mt-2 flex items-center gap-2">
       <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Last {balls.length}
       </span>
@@ -19,7 +19,7 @@ export function BallDots({ balls }: { balls: string[] }) {
         {balls.map((ball, index) => (
           <li
             key={`${index}-${ball}`}
-            className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-mono text-[11px] font-bold tabular-nums ${toneFor(ball)}`}
+            className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold tabular-nums ${toneFor(ball)}`}
           >
             {ball.toUpperCase() === "W" ? "W" : ball}
           </li>
