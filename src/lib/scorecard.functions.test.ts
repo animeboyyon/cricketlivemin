@@ -1,39 +1,44 @@
 import { describe, expect, it } from "vitest";
-import type { InningsScorecard, LiveSituation } from "@/types/scorecard";
 import {
   alignProbability,
-  estimateChaseProbability,
   normalizeCommentary,
-  parsePrediction,
   parseRecentBalls,
+  parseWinProbability,
 } from "./scorecard.functions";
 
-describe("parsePrediction", () => {
-  const block = (id: number, t1: number, t2: number, draw: number) =>
-    `\\"winProbability\\":{\\"matchId\\":${id},\\"drawTiePercent\\":${draw},\\"drawPercent\\":${draw},\\"team1\\":{\\"id\\":11,\\"percent\\":${t1},\\"name\\":\\"South Africa\\"},\\"team2\\":{\\"id\\":4,\\"percent\\":${t2},\\"name\\":\\"Australia\\"},\\"odds\\":{\\"team1_point\\":2.8}}`;
-  const html = `<script>${block(111, 2, 73, 25)},${block(222, 34, 36, 30)}</script>`;
+describe("parseWinProbability", () => {
+  const commWinProbability = {
+    matchId: 172671,
+    drawTiePercent: 25,
+    team1: { id: 96, percent: 2, name: "Afghanistan", shortName: "AFG" },
+    team2: { id: 6, percent: 73, name: "Bangladesh", shortName: "BAN" },
+    lastUpdatedOver: 108,
+    odds: { team1_point: 47.5, team2_point: 1.3, draw_point: 3.8 },
+  };
 
-  it("reads the exact match's percentages including the draw", () => {
-    expect(parsePrediction(html, 222)).toEqual({
-      team1: 34,
-      team2: 36,
-      draw: 30,
-      team1Id: 11,
-      team2Id: 4,
+  it("reads Cricbuzz's live percentages including the draw", () => {
+    expect(parseWinProbability(commWinProbability, 172671)).toEqual({
+      team1: 2,
+      team2: 73,
+      draw: 25,
+      team1Id: 96,
+      team2Id: 6,
     });
   });
 
-  it("chooses the freshest duplicate record for the same match", () => {
-    const older = block(222, 34, 36, 30).replace(
-      "\\\"odds\\\":{\\\"team1_point\\\":2.8}",
-      "\\\"lastUpdatedOver\\\":10,\\\"odds\\\":{\\\"team1_point\\\":2.8}",
-    );
-    const newer = `\\\"winProbability\\\":{\\\"matchId\\\":222,\\\"drawPercent\\\":20,\\\"team1\\\":{\\\"id\\\":11,\\\"percent\\\":40},\\\"team2\\\":{\\\"id\\\":4,\\\"percent\\\":40},\\\"lastUpdatedOver\\\":20}`;
-    expect(parsePrediction(`${older}${newer}`, 222)).toMatchObject({ team1: 40, team2: 40, draw: 20 });
+  it("omits the draw for limited-overs matches", () => {
+    expect(
+      parseWinProbability({ ...commWinProbability, drawTiePercent: 0 }, 172671)?.draw,
+    ).toBeUndefined();
   });
 
-  it("returns null for a match that has no prediction", () => {
-    expect(parsePrediction(html, 333)).toBeNull();
+  it("rejects a figure belonging to another match", () => {
+    expect(parseWinProbability(commWinProbability, 999)).toBeNull();
+  });
+
+  it("returns null when Cricbuzz has no figure", () => {
+    expect(parseWinProbability(undefined, 172671)).toBeNull();
+    expect(parseWinProbability({ matchId: 172671 }, 172671)).toBeNull();
   });
 });
 
@@ -96,29 +101,5 @@ describe("normalizeCommentary", () => {
   it("returns nothing for empty or malformed payloads", () => {
     expect(normalizeCommentary(undefined)).toEqual([]);
     expect(normalizeCommentary({ a: { commText: "no timestamp" } })).toEqual([]);
-  });
-});
-
-describe("estimateChaseProbability", () => {
-  const chasing = {
-    inningsId: 2,
-    battingTeamId: 2,
-    runs: 80,
-    wickets: 2,
-    overs: 10,
-    runRate: 8,
-  } as InningsScorecard;
-  const first = { inningsId: 1, battingTeamId: 1, runs: 160 } as InningsScorecard;
-  const live = { inningsId: 2, target: 161, requiredRunRate: 8.1 } as LiveSituation;
-
-  it("flags the figure as an estimate and sums to 100", () => {
-    const result = estimateChaseProbability([first, chasing], live);
-    expect(result?.estimated).toBe(true);
-    expect((result?.team1 ?? 0) + (result?.team2 ?? 0)).toBe(100);
-  });
-
-  it("returns null when there is no chase to estimate", () => {
-    expect(estimateChaseProbability([first], { ...live, target: null })).toBeNull();
-    expect(estimateChaseProbability([first, chasing], null)).toBeNull();
   });
 });

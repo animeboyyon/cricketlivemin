@@ -120,29 +120,13 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
     const value = typeof v === "string" ? Number.parseFloat(v.replace(/%/g, "")) : v;
     return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
   };
-  const findNumber = (source: unknown, keys: string[]): number | null => {
-    if (!source || typeof source !== "object") return null;
-    for (const [key, value] of Object.entries(source as Raw)) {
-      if (keys.some((candidate) => key.toLowerCase().replace(/[_-]/g, "").includes(candidate))) {
-        const parsed = positive(value);
-        if (parsed !== null && parsed <= 100) return parsed;
-      }
-      const nested = findNumber(value, keys);
-      if (nested !== null) return nested;
-    }
-    return null;
-  };
-  // Cricbuzz's miniscore may expose a rapidly changing heuristic. Do not use it;
-  // the scorecard consumes the official prediction page value below instead.
-  const winProbability = null;
-
   return {
     inningsId: num(mini.inningsId),
     currentRunRate: positive(mini.currentRunRate),
     requiredRunRate: positive(mini.requiredRunRate),
     target: positive(mini.target),
     runsToWin: positive(mini.remRunsToWin),
-    winProbability,
+    winProbability: null,
   };
 }
 
@@ -231,74 +215,27 @@ async function fetchJson(url: string): Promise<Raw | null> {
   return (await res.json()) as Raw;
 }
 
-async function fetchPrediction(matchId: number): Promise<WinProbability | null> {
-  try {
-    const res = await fetch(
-      `https://www.cricbuzz.com/live-cricket-match-predictions?ts=${Date.now()}`,
-      {
-        headers: { ...HEADERS, Accept: "text/html", "Cache-Control": "no-cache" },
-        cache: "no-store",
-      },
-    );
-    if (!res.ok) return null;
-    const html = await res.text();
-    return parsePrediction(html, matchId);
-  } catch {
-    return null;
-  }
-}
+// The comm API returns the same `winProbability` object that cricbuzz.com
+// renders on the live match page. The /live-cricket-match-predictions hub lags
+// several overs behind and only lists featured matches, so it is not used.
+export function parseWinProbability(raw: unknown, matchId: number): WinProbability | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Raw;
+  if (data.matchId !== undefined && Number(data.matchId) !== matchId) return null;
 
-// Cricbuzz embeds each match's figure as escaped JSON inside serialized
-// Next.js data, so we unescape and parse that exact object.
-export function parsePrediction(html: string, matchId: number): WinProbability | null {
-  const text = html.replace(/\\"/g, '"');
-  const key = '"winProbability":';
-  const marker = `${key}{"matchId":${matchId},`;
-  const candidates: Array<{ probability: WinProbability; updatedOver: number }> = [];
-  let searchFrom = 0;
+  const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
+  const team1 = Number(data.team1?.percent);
+  const team2 = Number(data.team2?.percent);
+  if (!valid(team1) || !valid(team2)) return null;
+  const draw = Number(data.drawTiePercent ?? data.drawPercent ?? 0);
 
-  while (true) {
-    const start = text.indexOf(marker, searchFrom);
-    if (start < 0) break;
-    const objectStart = start + key.length;
-    let depth = 0;
-    let objectEnd = -1;
-    for (let i = objectStart; i < text.length; i++) {
-      if (text[i] === "{") depth++;
-      else if (text[i] === "}" && --depth === 0) {
-        objectEnd = i;
-        break;
-      }
-    }
-    if (objectEnd < 0) break;
-
-    try {
-      const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
-      const team1 = Number(data.team1?.percent);
-      const team2 = Number(data.team2?.percent);
-      const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
-      const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
-      if (valid(team1) && valid(team2)) {
-        candidates.push({
-          probability: {
-            team1,
-            team2,
-            draw: valid(draw) && draw > 0 ? draw : undefined,
-            team1Id: num(data.team1?.id),
-            team2Id: num(data.team2?.id),
-          },
-          updatedOver: Number(data.lastUpdatedOver) || -1,
-        });
-      }
-    } catch {
-      // Ignore malformed serialized records and continue scanning the payload.
-    }
-    searchFrom = objectEnd + 1;
-  }
-
-  return candidates
-    .sort((a, b) => b.updatedOver - a.updatedOver)
-    .at(0)?.probability ?? null;
+  return {
+    team1,
+    team2,
+    draw: valid(draw) && draw > 0 ? draw : undefined,
+    team1Id: num(data.team1?.id),
+    team2Id: num(data.team2?.id),
+  };
 }
 
 // Cricbuzz's prediction page orders teams differently from the scorecard, so
@@ -313,36 +250,6 @@ export function alignProbability(
     return { ...rest, team1: probability.team2, team2: probability.team1 };
   }
   return rest;
-}
-
-export function estimateChaseProbability(
-  innings: InningsScorecard[],
-  live: LiveSituation | null,
-  team1Id?: number,
-): WinProbability | null {
-  if (!live?.target || live.inningsId <= 0) return null;
-  const current = innings.find((entry) => entry.inningsId === live.inningsId);
-  if (!current || current.runs <= 0 || current.overs <= 0) return null;
-  const previous = innings.find((entry) => entry.inningsId !== current.inningsId);
-  const ballsRemaining = Math.max(
-    1,
-    Math.round(((live.target - current.runs) / Math.max(live.requiredRunRate ?? 6, 1)) * 6),
-  );
-  const wicketsRemaining = Math.max(0, 10 - current.wickets);
-  const requiredRate = live.requiredRunRate ?? (live.target - current.runs) / (ballsRemaining / 6);
-  const scoringRate = current.runRate || current.runs / (current.overs || 1);
-  const pressure = requiredRate / Math.max(scoringRate, 1);
-  const chase = Math.max(
-    5,
-    Math.min(
-      95,
-      58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20,
-    ),
-  );
-  const battingTeamIsTeam1 = current.battingTeamId === (team1Id || previous?.battingTeamId || 0);
-  return battingTeamIsTeam1
-    ? { team1: Math.round(chase), team2: Math.round(100 - chase), estimated: true }
-    : { team1: Math.round(100 - chase), team2: Math.round(chase), estimated: true };
 }
 
 export const getMatchCenter = createServerFn({ method: "GET" })
@@ -363,11 +270,11 @@ export const getMatchCenter = createServerFn({ method: "GET" })
       error: null,
     };
     try {
-      const [scorecard, comm, prediction] = await Promise.all([
+      const [scorecard, comm] = await Promise.all([
         fetchJson(`https://www.cricbuzz.com/api/mcenter/scorecard/${matchId}`),
         fetchJson(`https://www.cricbuzz.com/api/mcenter/comm/${matchId}`).catch(() => null),
-        fetchPrediction(matchId),
       ]);
+      const prediction = parseWinProbability(comm?.winProbability, matchId);
       if (!scorecard) return { ...empty, error: "Scorecard unavailable" };
 
       const header = scorecard.matchHeader ?? {};

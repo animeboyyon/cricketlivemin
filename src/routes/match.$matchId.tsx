@@ -226,6 +226,12 @@ function MatchDetail() {
   const score = entry.match.matchScore;
   const isLive = LIVE_STATES.includes(info.state);
 
+  // The scorecard feed can order teams differently from the match list, and
+  // the win probability and worm data follow the scorecard order.
+  const centerSwapped = !!center?.team1Id && center.team1Id === info.team2.teamId;
+  const centerTeam1Label = centerSwapped ? info.team2.teamSName : info.team1.teamSName;
+  const centerTeam2Label = centerSwapped ? info.team1.teamSName : info.team2.teamSName;
+
   return (
     <main className="mx-auto max-w-4xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
       <StickyScoreStrip
@@ -313,8 +319,8 @@ function MatchDetail() {
             <LiveMatchSummary
               center={center}
               isLive={isLive}
-              team1Label={info.team1.teamSName}
-              team2Label={info.team2.teamSName}
+              team1Label={centerTeam1Label}
+              team2Label={centerTeam2Label}
             />
           </div>
 
@@ -343,8 +349,8 @@ function MatchDetail() {
           <div className="mt-3">
             <MatchWorm
               center={center}
-              team1Label={info.team1.teamSName}
-              team2Label={info.team2.teamSName}
+              team1Label={centerTeam1Label}
+              team2Label={centerTeam2Label}
             />
           </div>
         </MatchTabs>
