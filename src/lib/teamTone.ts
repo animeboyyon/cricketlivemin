@@ -48,9 +48,9 @@ export function getTeamTones(
 }
 
 export const toneRowClass: Record<TeamTone, string> = {
-  batting: "bg-primary/10 ring-1 ring-primary/30",
-  winner: "bg-primary/10 ring-1 ring-primary/30",
-  loser: "opacity-60",
+  batting: "",
+  winner: "",
+  loser: "opacity-55",
   neutral: "",
 };
 
@@ -62,6 +62,52 @@ export const toneScoreClass: Record<TeamTone, string> = {
 };
 
 export const toneLabel: Partial<Record<TeamTone, string>> = {
-  batting: "Batting",
   winner: "Won",
+};
+
+export function formatBadgeClass(_format: string) {
+  return "bg-muted text-muted-foreground";
+}
+
+export function stateAccentClass(state: string) {
+  if (LIVE_STATES.includes(state)) return "border-l-primary";
+  if (state === "Preview" || state === "Upcoming") return "border-l-chart-3";
+  if (state === "Complete") return "border-l-muted-foreground/40";
+  return "border-l-border";
+}
+
+export type StatusKind =
+  | "chase"
+  | "won"
+  | "lead"
+  | "trail"
+  | "toss"
+  | "draw"
+  | "live"
+  | "upcoming"
+  | "plain";
+
+export function getStatusKind(status: string, state: string): StatusKind {
+  const s = status.toLowerCase();
+  if (/toss|opt to|elected to/.test(s)) return "toss";
+  if (/\bneed|\brequire/.test(s)) return "chase";
+  if (/\bwon\b/.test(s)) return "won";
+  if (/\blead\b|\bleads\b/.test(s)) return "lead";
+  if (/\btrail/.test(s)) return "trail";
+  if (/draw|tied|no result|abandon/.test(s)) return "draw";
+  if (LIVE_STATES.includes(state)) return "live";
+  if (state === "Preview" || state === "Upcoming") return "upcoming";
+  return "plain";
+}
+
+export const statusClass: Record<StatusKind, string> = {
+  chase: "text-chart-3",
+  won: "text-primary",
+  lead: "text-foreground",
+  trail: "text-chart-4",
+  toss: "text-muted-foreground",
+  draw: "text-muted-foreground",
+  live: "text-foreground",
+  upcoming: "text-muted-foreground",
+  plain: "text-foreground/80",
 };

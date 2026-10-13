@@ -6,9 +6,9 @@ interface UpdatedAtProps {
 }
 
 function formatAge(seconds: number) {
-  if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 5) return "now";
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m`;
 }
 
 export function UpdatedAt({ timestamp, stale }: UpdatedAtProps) {
@@ -24,10 +24,14 @@ export function UpdatedAt({ timestamp, stale }: UpdatedAtProps) {
 
   return (
     <p
-      className={`text-xs tabular-nums ${isStale ? "text-amber-500" : "text-muted-foreground"}`}
-      title={isStale ? "Live feed is delayed; showing the last known scores" : undefined}
+      className={`inline-flex shrink-0 items-center text-[11px] font-medium tabular-nums ${
+        isStale ? "text-chart-4" : "text-muted-foreground"
+      }`}
+      title={isStale ? "Live feed is delayed; showing the last known scores" : "Scores are up to date"}
     >
-      {isStale ? "Delayed · " : ""}Updated {formatAge(seconds)}
+      <span className="sr-only">{isStale ? "Delayed, last updated " : "Updated "}</span>
+      {isStale ? "Delayed · " : ""}
+      {formatAge(seconds)}
     </p>
   );
 }

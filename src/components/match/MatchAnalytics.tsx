@@ -15,7 +15,7 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
     const ballsBowled = current.balls || oversToBalls(current.overs);
     const crr = live?.currentRunRate ?? current.runRate;
 
-    const isChase = maxOvers != null && innings.length >= 2;
+    const isChase = innings.length >= 2;
     const target = live?.target ?? (isChase ? innings[innings.length - 2].runs + 1 : null);
     const totalBalls = maxOvers != null ? Math.round(maxOvers * 6) : null;
     const ballsLeft = totalBalls != null ? Math.max(0, totalBalls - ballsBowled) : null;
@@ -26,44 +26,57 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
       (isLive && runsNeeded != null && ballsLeft ? (runsNeeded / ballsLeft) * 6 : null);
 
     const projected =
-      maxOvers != null && ballsLeft != null && !isChase
+      maxOvers != null && ballsLeft != null && Number.isFinite(crr)
         ? Math.round(current.runs + (crr * ballsLeft) / 6)
         : null;
 
-    return [
+    const stats: StatItem[] = [
       {
         label: "Current RR",
         value: crr.toFixed(2),
         hint: `${current.battingTeamShort} · ${formatOvers(ballsBowled)} ov`,
         tone: "primary",
       },
-      {
-        label: "Required RR",
-        value: rrr != null ? rrr.toFixed(2) : "—",
-        hint: rrr != null ? (rrr > crr ? "Above current rate" : "Within reach") : "Not chasing",
-        tone: rrr != null && rrr > crr ? "accent" : "default",
-      },
-      {
-        label: "Target",
-        value: target != null ? String(target) : "—",
-        hint:
-          target != null && runsNeeded != null && ballsLeft != null && isLive
-            ? `Need ${runsNeeded} off ${ballsLeft}`
-            : target != null
-              ? `Set by ${innings[innings.length - 2]?.battingTeamShort ?? ""}`
-              : "Batting first",
-      },
-      {
-        label: "Projected",
-        value: projected != null ? String(projected) : "—",
-        hint:
-          projected != null
-            ? `At ${crr.toFixed(2)} rpo`
-            : isChase
-              ? "Chase in progress"
-              : "Open-ended format",
-      },
     ];
+
+    if (maxOvers == null) {
+      if (target != null) {
+        stats.push({
+          label: "Target",
+          value: String(target),
+          hint: runsNeeded != null ? `Need ${runsNeeded} runs` : "Chase target",
+          tone: "default",
+        });
+      }
+    } else {
+      stats.push(
+        {
+          label: "Required RR",
+          value: rrr != null ? rrr.toFixed(2) : "—",
+          hint: rrr != null ? (rrr > crr ? "Above current rate" : "Within reach") : "Not chasing",
+          tone: rrr != null ? (rrr > crr ? "danger" : "accent") : "default",
+        },
+        {
+          label: "Target",
+          tone: target != null ? "warning" : "default",
+          value: target != null ? String(target) : "—",
+          hint:
+            target != null && runsNeeded != null && ballsLeft != null && isLive
+              ? `Need ${runsNeeded} off ${ballsLeft}`
+              : target != null
+                ? `Set by ${innings[innings.length - 2]?.battingTeamShort ?? ""}`
+                : "Batting first",
+        },
+        {
+          label: "Projected",
+          tone: "default",
+          value: projected != null ? String(projected) : "—",
+          hint: projected != null ? `At ${crr.toFixed(2)} rpo` : "Limited-overs projection",
+        },
+      );
+    }
+
+    return stats;
   }, [innings, live, maxOvers, isLive]);
 
   if (stats.length === 0) return null;
@@ -92,11 +105,11 @@ export function MatchWorm({
   return (
     <section
       aria-labelledby="analytics-heading"
-      className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6"
+      className="rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)] sm:p-4"
     >
       <h2
         id="analytics-heading"
-        className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+        className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
       >
         <TrendingUp className="h-3.5 w-3.5 text-primary" /> Match worm
       </h2>

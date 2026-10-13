@@ -4,7 +4,7 @@ export interface StatItem {
   label: string;
   value: string;
   hint?: string;
-  tone?: "primary" | "accent" | "default";
+  tone?: "primary" | "accent" | "warning" | "danger" | "violet" | "default";
 }
 
 export function StatsBar({ items }: { items: StatItem[] }) {
@@ -14,7 +14,7 @@ export function StatsBar({ items }: { items: StatItem[] }) {
         <div
           key={item.label}
           className={cn(
-            "min-w-0 px-3 py-2.5 sm:px-4 sm:py-3",
+            "min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2",
             i % 2 === 1 && "border-l border-border sm:border-l-0",
             i >= 2 && "border-t border-border sm:border-t-0",
           )}
@@ -24,10 +24,10 @@ export function StatsBar({ items }: { items: StatItem[] }) {
           </dt>
           <dd
             className={cn(
-              "mt-0.5 font-mono text-lg font-bold tabular-nums sm:mt-1 sm:text-xl",
+              "font-mono text-base font-bold tabular-nums sm:text-lg",
               item.tone === "primary" && "text-primary",
-              item.tone === "accent" && "text-accent",
-              (!item.tone || item.tone === "default") && "text-foreground",
+              item.tone === "danger" && "text-chart-4",
+              item.tone !== "primary" && item.tone !== "danger" && "text-foreground",
             )}
           >
             {item.value}

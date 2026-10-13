@@ -1,27 +1,49 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { MatchCard } from "@/components/MatchCard";
+import { cn } from "@/lib/utils";
 import type { SeriesGroupData } from "@/lib/series";
 
 export function SeriesGroup({ group }: { group: SeriesGroupData }) {
+  const [open, setOpen] = useState(true);
   const headingId = `series-${group.seriesId}`;
+  const panelId = `series-panel-${group.seriesId}`;
+
   return (
-    <section aria-labelledby={headingId} className="space-y-3">
-      <div className="flex items-center gap-3">
-        <h2
-          id={headingId}
-          className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+    <section
+      aria-labelledby={headingId}
+      className="overflow-hidden rounded-xl border border-border bg-card/40"
+    >
+      <h2 id={headingId} className="m-0">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition hover:bg-card/80"
         >
-          {group.seriesName}
-        </h2>
-        <div className="h-px flex-1 bg-border/60" aria-hidden="true" />
-        <span className="text-xs tabular-nums text-muted-foreground/70">
-          {group.matches.length}
-        </span>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {group.matches.map((m) => (
-          <MatchCard key={m.match.matchInfo.matchId} entry={m} />
-        ))}
-      </div>
+          <span className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {group.seriesName}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              !open && "-rotate-90",
+            )}
+            aria-hidden="true"
+          />
+        </button>
+      </h2>
+      {open && (
+        <div
+          id={panelId}
+          className="grid gap-2 border-t border-border/60 p-2 sm:grid-cols-2 sm:gap-3 sm:p-3 lg:grid-cols-3"
+        >
+          {group.matches.map((m) => (
+            <MatchCard key={m.match.matchInfo.matchId} entry={m} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

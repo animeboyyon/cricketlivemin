@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { Activity, RefreshCw } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { SeriesGroup } from "@/components/SeriesGroup";
 import { groupBySeries } from "@/lib/series";
-import { UpdatedAt } from "@/components/UpdatedAt";
 import type { MatchEntry } from "@/types/cricket";
 
 export const Route = createFileRoute("/")({
@@ -28,6 +26,20 @@ export const Route = createFileRoute("/")({
 });
 
 type Filter = "all" | "live" | "upcoming" | "complete";
+
+const filterActiveClass: Record<Filter, string> = {
+  all: "bg-foreground text-background",
+  live: "bg-foreground text-background",
+  upcoming: "bg-foreground text-background",
+  complete: "bg-foreground text-background",
+};
+
+const filterIdleClass: Record<Filter, string> = {
+  all: "bg-card text-muted-foreground hover:text-foreground",
+  live: "bg-card text-muted-foreground hover:text-foreground",
+  upcoming: "bg-card text-muted-foreground hover:text-foreground",
+  complete: "bg-card text-muted-foreground hover:text-foreground",
+};
 
 const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"];
 
@@ -75,7 +87,7 @@ function matchPriority(match: MatchEntry) {
 }
 
 function Index() {
-  const { data, isLoading, isFetching, refetch, error, dataUpdatedAt } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["cricket-home"],
     queryFn: () => getCricketHome(),
     refetchInterval: 5_000,
@@ -85,8 +97,6 @@ function Index() {
   const [seriesFilter, setSeriesFilter] = useState<number | null>(null);
 
   const matches = useMemo<MatchEntry[]>(() => data?.matches ?? [], [data?.matches]);
-  const fetchedAt = data?.fetchedAt ?? (dataUpdatedAt || null);
-  const isStale = Boolean(data?.stale) || Boolean(error && data);
 
   const counts = useMemo(() => {
     let live = 0,
@@ -146,42 +156,29 @@ function Index() {
     seriesFilter !== null && seriesOptions.some((s) => s.seriesId === seriesFilter);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-      <header className="mb-8 sm:mb-10">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-              <Activity className="h-3 w-3" />
-              Live Scoreboard
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
-              Cricket{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Live
-              </span>
-            </h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-              Real-time scores, fixtures, and results from across the cricketing world. Instant live
-              updates when available.
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary disabled:opacity-60"
-            >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-            {fetchedAt && <UpdatedAt timestamp={fetchedAt} stale={isStale} />}
-          </div>
+    <main className="mx-auto max-w-7xl px-4 pb-8 pt-4 sm:px-6 sm:pt-8 lg:px-8">
+      <header className="mb-1 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
+            <span className="flex h-[50px] w-80 items-center">
+              <img
+                src="/cricket-live-header.png"
+                alt="Cricket Live"
+                className="h-full w-full object-contain object-left"
+              />
+            </span>
+          </h1>
+          <p className="mt-1 hidden max-w-xl text-sm text-muted-foreground sm:block">
+            Real-time scores, fixtures, and results from across the cricketing world.
+          </p>
         </div>
+      </header>
 
+      <div className="sticky top-0 z-30 -mx-4 mb-3 bg-background/85 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div
           role="group"
           aria-label="Filter matches"
-          className="-mx-4 mt-6 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+          className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
         >
           {(
             [
@@ -197,23 +194,14 @@ function Index() {
                 key={key}
                 onClick={() => setFilter(key)}
                 aria-pressed={active}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
-                    : "bg-card text-muted-foreground hover:text-foreground"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold transition ${
+                  active ? filterActiveClass[key] : filterIdleClass[key]
                 }`}
               >
-                {key === "live" && (
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      active ? "bg-primary-foreground" : "bg-primary live-dot"
-                    }`}
-                  />
-                )}
                 {label}
                 <span
-                  className={`rounded-full px-1.5 text-xs tabular-nums ${
-                    active ? "bg-primary-foreground/20" : "bg-muted"
+                  className={`rounded-full px-1.5 text-[11px] tabular-nums ${
+                    active ? "bg-black/15" : "bg-background/50"
                   }`}
                 >
                   {count}
@@ -232,9 +220,9 @@ function Index() {
                     onClick={() => setSeriesFilter(active ? null : seriesId)}
                     aria-pressed={active}
                     title={seriesName}
-                    className={`inline-flex max-w-[12rem] shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    className={`inline-flex max-w-[11rem] shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
                       active
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-accent bg-accent/15 text-accent"
                         : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -245,7 +233,7 @@ function Index() {
             </>
           )}
         </div>
-      </header>
+      </div>
 
       {matches.length === 0 && (error || data?.error) && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
@@ -254,24 +242,24 @@ function Index() {
       )}
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-56 animate-pulse rounded-2xl border border-border bg-card" />
+            <div key={i} className="h-36 animate-pulse rounded-xl border border-border bg-card" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 text-center">
           <p className="text-muted-foreground">No matches in this category right now.</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-4">
           {groups.map((group) => (
             <SeriesGroup key={group.seriesId} group={group} />
           ))}
         </div>
       )}
 
-      <footer className="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+      <footer className="mt-8 border-t border-border pt-4 text-center text-xs text-muted-foreground">
         Data sourced from cricbuzz.com · Instant live updates when available
       </footer>
     </main>

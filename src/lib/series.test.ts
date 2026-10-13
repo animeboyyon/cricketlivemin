@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { MatchEntry } from "@/types/cricket";
-import { groupBySeries } from "./series";
+import { groupBySeries, shortSeriesName } from "./series";
+
+describe("shortSeriesName", () => {
+  it("shortens bilateral tours", () => {
+    expect(shortSeriesName("Australia tour of South Africa, 2026")).toBe("AUS v SA");
+    expect(shortSeriesName("Afghanistan vs Bangladesh in UAE, 2026")).toBe("AFG v BAN");
+  });
+
+  it("uses initials for long league names and keeps short ones", () => {
+    expect(shortSeriesName("Indian Premier League 2026")).toBe("IPL");
+    expect(shortSeriesName("Ashes, 2026")).toBe("Ashes");
+  });
+});
 
 const entry = (matchId: number, seriesId: number, seriesName: string) =>
   ({ match: { matchInfo: { matchId, seriesId, seriesName } } }) as unknown as MatchEntry;

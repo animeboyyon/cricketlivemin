@@ -132,19 +132,9 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
     }
     return null;
   };
-  const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
-  const team1Probability =
-    positive(probability?.team1 ?? probability?.team1Percentage) ??
-    positive(mini.team1WinProbability) ??
-    findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
-  const team2Probability =
-    positive(probability?.team2 ?? probability?.team2Percentage) ??
-    positive(mini.team2WinProbability) ??
-    findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
-  const winProbability =
-    team1Probability !== null && team2Probability !== null
-      ? { team1: team1Probability, team2: team2Probability }
-      : null;
+  // Cricbuzz's miniscore may expose a rapidly changing heuristic. Do not use it;
+  // the scorecard consumes the official prediction page value below instead.
+  const winProbability = null;
 
   return {
     inningsId: num(mini.inningsId),
@@ -157,6 +147,7 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
 }
 
 const MAX_COMMENTARY = 60;
+const lastOfficialProbability = new Map<number, WinProbability>();
 
 const stripMarkup = (text: unknown) =>
   String(text ?? "")
@@ -235,16 +226,20 @@ export function normalizeCommentary(raw: unknown): CommentaryEntry[] {
 }
 
 async function fetchJson(url: string): Promise<Raw | null> {
-  const res = await fetch(url, { headers: HEADERS });
+  const res = await fetch(url, { headers: HEADERS, cache: "no-store" });
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) return null;
   return (await res.json()) as Raw;
 }
 
 async function fetchPrediction(matchId: number): Promise<WinProbability | null> {
   try {
-    const res = await fetch("https://www.cricbuzz.com/live-cricket-match-predictions", {
-      headers: { ...HEADERS, Accept: "text/html" },
-    });
+    const res = await fetch(
+      `https://www.cricbuzz.com/live-cricket-match-predictions?ts=${Date.now()}`,
+      {
+        headers: { ...HEADERS, Accept: "text/html", "Cache-Control": "no-cache" },
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     const html = await res.text();
     return parsePrediction(html, matchId);
@@ -258,38 +253,52 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
 export function parsePrediction(html: string, matchId: number): WinProbability | null {
   const text = html.replace(/\\"/g, '"');
   const key = '"winProbability":';
-  const start = text.indexOf(`${key}{"matchId":${matchId},`);
-  if (start < 0) return null;
+  const marker = `${key}{"matchId":${matchId},`;
+  const candidates: Array<{ probability: WinProbability; updatedOver: number }> = [];
+  let searchFrom = 0;
 
-  const objectStart = start + key.length;
-  let depth = 0;
-  let objectEnd = -1;
-  for (let i = objectStart; i < text.length; i++) {
-    if (text[i] === "{") depth++;
-    else if (text[i] === "}" && --depth === 0) {
-      objectEnd = i;
-      break;
+  while (true) {
+    const start = text.indexOf(marker, searchFrom);
+    if (start < 0) break;
+    const objectStart = start + key.length;
+    let depth = 0;
+    let objectEnd = -1;
+    for (let i = objectStart; i < text.length; i++) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}" && --depth === 0) {
+        objectEnd = i;
+        break;
+      }
     }
-  }
-  if (objectEnd < 0) return null;
+    if (objectEnd < 0) break;
 
-  try {
-    const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
-    const team1 = Number(data.team1?.percent);
-    const team2 = Number(data.team2?.percent);
-    const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
-    const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
-    if (!valid(team1) || !valid(team2)) return null;
-    return {
-      team1,
-      team2,
-      draw: valid(draw) && draw > 0 ? draw : undefined,
-      team1Id: num(data.team1?.id),
-      team2Id: num(data.team2?.id),
-    };
-  } catch {
-    return null;
+    try {
+      const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
+      const team1 = Number(data.team1?.percent);
+      const team2 = Number(data.team2?.percent);
+      const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
+      const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
+      if (valid(team1) && valid(team2)) {
+        candidates.push({
+          probability: {
+            team1,
+            team2,
+            draw: valid(draw) && draw > 0 ? draw : undefined,
+            team1Id: num(data.team1?.id),
+            team2Id: num(data.team2?.id),
+          },
+          updatedOver: Number(data.lastUpdatedOver) || -1,
+        });
+      }
+    } catch {
+      // Ignore malformed serialized records and continue scanning the payload.
+    }
+    searchFrom = objectEnd + 1;
   }
+
+  return candidates
+    .sort((a, b) => b.updatedOver - a.updatedOver)
+    .at(0)?.probability ?? null;
 }
 
 // Cricbuzz's prediction page orders teams differently from the scorecard, so
@@ -396,12 +405,16 @@ export const getMatchCenter = createServerFn({ method: "GET" })
           const team1Id = num(header.team1?.id);
           const team2Id = num(header.team2?.id);
           if (prediction) {
-            return { ...live, winProbability: alignProbability(prediction, team1Id, team2Id) };
+            const official = alignProbability(prediction, team1Id, team2Id);
+            lastOfficialProbability.set(matchId, official);
+            return { ...live, winProbability: official };
           }
-          if (live.winProbability) return live;
-          // A chase estimate ignores draws, so it would mislead in a Test.
-          if (String(header.matchFormat).toUpperCase() === "TEST") return live;
-          return { ...live, winProbability: estimateChaseProbability(innings, live, team1Id) };
+          // Keep the last official value through tea, lunch, stumps and innings
+          // breaks. Never replace it with a miniscore heuristic or an unavailable state.
+          return {
+            ...live,
+            winProbability: lastOfficialProbability.get(matchId) ?? null,
+          };
         })(),
         recentBalls: parseRecentBalls(comm?.miniscore?.recentOvsStats),
         commentary: normalizeCommentary(comm?.matchCommentary),

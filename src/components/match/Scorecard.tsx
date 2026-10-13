@@ -8,7 +8,7 @@ type View = "batting" | "bowling";
 
 const th =
   "px-1 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:px-2";
-const td = "px-1 py-2.5 text-right font-mono text-[13px] tabular-nums sm:px-2 sm:text-sm";
+const td = "px-1 py-1.5 text-right font-mono text-[13px] tabular-nums sm:px-2 sm:text-sm";
 
 function inningsLabel(inn: InningsScorecard, all: InningsScorecard[]) {
   const sameTeam = all.filter((i) => i.battingTeamId === inn.battingTeamId);
@@ -19,11 +19,9 @@ function inningsLabel(inn: InningsScorecard, all: InningsScorecard[]) {
 export function Scorecard({
   innings,
   team1Id,
-  liveInningsId,
 }: {
   innings: InningsScorecard[];
   team1Id: number;
-  liveInningsId?: number;
 }) {
   const latest = innings[innings.length - 1];
   const [view, setView] = useState<View>("batting");
@@ -58,12 +56,6 @@ export function Scorecard({
                   <span className="font-mono text-xs tabular-nums opacity-80">
                     {inn.runs}/{inn.wickets}
                   </span>
-                  {inn.inningsId === liveInningsId && (
-                    <span
-                      className="live-dot h-1.5 w-1.5 rounded-full bg-primary"
-                      aria-label="Live"
-                    />
-                  )}
                 </TabsTrigger>
               );
             })}
@@ -167,7 +159,7 @@ function BattingTable({ inn }: { inn: InningsScorecard }) {
       </tbody>
       <tfoot className="text-muted-foreground">
         <tr className="border-t border-border">
-          <th scope="row" className="py-2.5 pr-1 text-left text-xs font-medium">
+          <th scope="row" className="py-1.5 pr-1 text-left text-xs font-medium">
             Extras
             <span className="block truncate font-mono text-[11px] font-normal tabular-nums">
               b {extras.byes}, lb {extras.legByes}, w {extras.wides}, nb {extras.noBalls}
@@ -194,7 +186,7 @@ function BatterTableRow({ b }: { b: BatterRow }) {
     <tr
       className={cn("border-b border-border/60 last:border-0", b.isBatting && "bg-primary/[0.04]")}
     >
-      <th scope="row" className="py-2.5 pr-1 text-left font-normal">
+      <th scope="row" className="py-1.5 pr-1 text-left font-normal">
         <div className="flex min-w-0 items-center gap-1">
           <span
             className={cn(
@@ -224,8 +216,12 @@ function BatterTableRow({ b }: { b: BatterRow }) {
       </th>
       <td className={cn(td, "font-bold text-foreground")}>{b.runs}</td>
       <td className={cn(td, "text-muted-foreground")}>{b.balls}</td>
-      <td className={cn(td, "text-muted-foreground")}>{b.fours}</td>
-      <td className={cn(td, "text-muted-foreground")}>{b.sixes}</td>
+      <td className={cn(td, b.fours > 0 ? "font-semibold text-accent" : "text-muted-foreground")}>
+        {b.fours}
+      </td>
+      <td className={cn(td, b.sixes > 0 ? "font-semibold text-chart-5" : "text-muted-foreground")}>
+        {b.sixes}
+      </td>
       <td className={cn(td, "pr-0 text-foreground sm:pr-0")}>{b.strikeRate.toFixed(1)}</td>
     </tr>
   );
@@ -270,7 +266,7 @@ function BowlingTable({ bowlers }: { bowlers: BowlerRow[] }) {
           <tr key={b.id} className="border-b border-border/60 last:border-0">
             <th
               scope="row"
-              className="truncate py-2.5 pr-1 text-left font-semibold text-foreground"
+              className="truncate py-1.5 pr-1 text-left font-semibold text-foreground"
               title={b.name}
             >
               {b.name}
