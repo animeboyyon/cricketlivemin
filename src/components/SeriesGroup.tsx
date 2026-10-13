@@ -13,14 +13,19 @@ export function SeriesGroup({ group }: { group: SeriesGroupData }) {
   if (isSingleMatch) {
     return (
       <section aria-labelledby={headingId}>
-        <h2
-          id={headingId}
-          className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+        <div
+          id={panelId}
+          className="overflow-hidden rounded-xl border border-border bg-card/40"
         >
-          {group.seriesName}
-        </h2>
-        <div id={panelId}>
-          <MatchCard entry={group.matches[0]} />
+          <h2
+            id={headingId}
+            className="border-b border-border/60 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            {group.seriesName}
+          </h2>
+          <div className="p-2 sm:p-3">
+            <MatchCard entry={group.matches[0]} />
+          </div>
         </div>
       </section>
     );
