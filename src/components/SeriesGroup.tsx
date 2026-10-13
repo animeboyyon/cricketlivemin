@@ -34,11 +34,9 @@ export function SeriesGroup({ group }: { group: SeriesGroupData }) {
             {group.seriesName}
           </span>
           {liveCount > 0 && (
-            <span
-              className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
-              role="img"
-              aria-label={`${liveCount} live`}
-            />
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-primary">
+              {liveCount} live
+            </span>
           )}
           <span className="h-px flex-1 bg-border/60" aria-hidden="true" />
           <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">

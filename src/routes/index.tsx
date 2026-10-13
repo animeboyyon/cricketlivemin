@@ -198,13 +198,6 @@ function Index() {
                   active ? filterActiveClass[key] : filterIdleClass[key]
                 }`}
               >
-                {key === "live" && (
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      active ? "bg-primary" : "bg-primary live-dot"
-                    }`}
-                  />
-                )}
                 {label}
                 <span
                   className={`rounded-full px-1.5 text-[11px] tabular-nums ${

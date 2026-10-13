@@ -135,7 +135,7 @@ function ScoreboardCard({
                 {team.teamSName}
                 {tone === "batting" && (
                   <span
-                    className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                    className="h-1 w-1 shrink-0 rounded-full bg-primary"
                     role="img"
                     aria-label="Batting"
                   />
@@ -265,7 +265,7 @@ function MatchDetail() {
           </div>
           {isLive ? (
             <span className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-              <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="live-pulse h-1.5 w-1.5 rounded-full bg-primary" />
               Live
             </span>
           ) : (

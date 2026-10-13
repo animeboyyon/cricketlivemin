@@ -25,7 +25,7 @@ function StatusBadge({ state }: { state: string }) {
   if (LIVE_STATES.includes(state)) {
     return (
       <div className={cn(base, "bg-primary/15 text-primary")}>
-        <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" />
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
         Live
       </div>
     );
@@ -64,7 +64,7 @@ function TeamRow({
             </span>
             {tone === "batting" && (
               <span
-                className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                className="h-1 w-1 shrink-0 rounded-full bg-primary"
                 role="img"
                 aria-label="Batting"
               />

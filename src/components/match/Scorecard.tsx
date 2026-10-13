@@ -59,10 +59,9 @@ export function Scorecard({
                     {inn.runs}/{inn.wickets}
                   </span>
                   {inn.inningsId === liveInningsId && (
-                    <span
-                      className="live-dot h-1.5 w-1.5 rounded-full bg-primary"
-                      aria-label="Live"
-                    />
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
+                      Live
+                    </span>
                   )}
                 </TabsTrigger>
               );

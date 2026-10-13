@@ -49,7 +49,7 @@ export function StickyScoreStrip({
       )}
     >
       <div className="mx-auto flex max-w-4xl items-center gap-3 px-3 py-1.5 sm:px-6">
-        {isLive && <span className="live-dot h-2 w-2 shrink-0 rounded-full bg-primary" />}
+
         {rows.map(({ team, innings, tone }) => (
           <span key={team.teamSName} className="flex min-w-0 items-baseline gap-1.5">
             <span

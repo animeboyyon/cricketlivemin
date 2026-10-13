@@ -24,16 +24,13 @@ export function UpdatedAt({ timestamp, stale }: UpdatedAtProps) {
 
   return (
     <p
-      className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium tabular-nums text-muted-foreground"
+      className={`inline-flex shrink-0 items-center text-[11px] font-medium tabular-nums ${
+        isStale ? "text-chart-4" : "text-muted-foreground"
+      }`}
       title={isStale ? "Live feed is delayed; showing the last known scores" : "Scores are up to date"}
     >
-      <span
-        aria-hidden="true"
-        className={`h-1.5 w-1.5 rounded-full ${
-          isStale ? "bg-muted-foreground/50" : "bg-emerald-400 shadow-[0_0_6px_rgb(52_211_153/0.7)]"
-        }`}
-      />
       <span className="sr-only">{isStale ? "Delayed, last updated " : "Updated "}</span>
+      {isStale ? "Delayed · " : ""}
       {formatAge(seconds)}
     </p>
   );
