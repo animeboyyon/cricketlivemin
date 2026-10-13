@@ -160,11 +160,11 @@ function Index() {
       <header className="mb-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
-            <span className="flex h-11 w-52 items-center overflow-hidden sm:h-14 sm:w-64">
+            <span className="flex h-11 w-52 items-center sm:h-14 sm:w-64">
               <img
                 src="/og-image.png"
                 alt="Cricket Live"
-                className="h-full w-auto max-w-none scale-[1.75] origin-left object-contain"
+                className="h-full w-full object-contain object-left"
               />
             </span>
           </h1>
