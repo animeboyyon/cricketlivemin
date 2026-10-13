@@ -12,6 +12,7 @@ import { NotifyButton } from "@/components/match/NotifyButton";
 import { Scorecard } from "@/components/match/Scorecard";
 import { ShareButton } from "@/components/match/ShareButton";
 import { TeamSheet } from "@/components/match/TeamSheet";
+import { Score } from "@/components/Score";
 import type { MatchEntry, Innings, Team, TeamScore } from "@/types/cricket";
 
 export const Route = createFileRoute("/match/$matchId")({
@@ -84,54 +85,7 @@ const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "St
 const LIVE_REFRESH_MS = 5_000;
 const IDLE_REFRESH_MS = 120_000;
 
-function formatInnings(inn?: Innings) {
-  if (!inn) return "Yet to bat";
-  return `${inn.runs}/${inn.wickets ?? 0}${inn.overs != null ? ` (${inn.overs} ov)` : ""}`;
-}
-
-function InningsCard({
-  team,
-  matchId,
-  scores,
-}: {
-  team: Team;
-  matchId: number;
-  scores?: TeamScore;
-}) {
-  const innings = [scores?.inngs1, scores?.inngs2].filter(Boolean) as Innings[];
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5">
-      <div className="mb-3 flex items-center gap-3 sm:mb-4">
-        <TeamSheet team={team} currentMatchId={matchId} />
-        <div>
-          <h3 className="text-lg font-bold text-foreground">{team.teamName}</h3>
-          <p className="text-xs text-muted-foreground">{team.teamSName}</p>
-        </div>
-      </div>
-      {innings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Yet to bat</p>
-      ) : (
-        <div className="space-y-2">
-          {innings.map((inn, i) => (
-            <div
-              key={inn.inningsId}
-              className="flex items-baseline justify-between rounded-lg bg-muted/40 px-3 py-2"
-            >
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                Innings {i + 1}
-              </span>
-              <span className="font-mono text-xl font-bold tabular-nums text-foreground">
-                {formatInnings(inn)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CombinedInningsCard({
+function ScoreboardCard({
   team1,
   team1Score,
   team2,
@@ -145,52 +99,49 @@ function CombinedInningsCard({
   matchId: number;
 }) {
   const rows = [
-    { team: team1, name: team1.teamName, short: team1.teamSName, score: team1Score },
-    { team: team2, name: team2.teamName, short: team2.teamSName, score: team2Score },
+    { team: team1, score: team1Score },
+    { team: team2, score: team2Score },
   ];
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5 sm:col-span-2">
-      <div className="flex flex-col gap-2">
-        {rows.map((team, index) => {
-          const innings = [team.score?.inngs1, team.score?.inngs2].filter(Boolean) as Innings[];
-          return (
-            <div
-              key={team.short}
-              className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-3 sm:px-4"
-            >
-              <TeamSheet team={team.team} currentMatchId={matchId} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-base font-bold text-foreground">{team.name}</h3>
-                    <p className="text-xs text-muted-foreground">{team.short}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    {innings.length > 0 ? (
-                      innings.map((inn, inningsIndex) => (
-                        <p
-                          key={inn.inningsId}
-                          className="font-mono text-lg font-bold tabular-nums text-foreground"
-                        >
-                          {formatInnings(inn)}
-                          {innings.length > 1 && (
-                            <span className="ml-2 text-[10px] font-sans font-normal uppercase tracking-wider text-muted-foreground">
-                              Inn {inningsIndex + 1}
-                            </span>
-                          )}
-                        </p>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">Yet to bat</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+    <div className="divide-y divide-border/60 rounded-2xl border border-border bg-card px-3 shadow-[var(--shadow-card)] sm:px-5">
+      {rows.map(({ team, score }) => {
+        const innings = [score?.inngs1, score?.inngs2].filter(Boolean) as Innings[];
+        return (
+          <div key={team.teamSName} className="flex items-center gap-3 py-3 sm:py-4">
+            <TeamSheet team={team} currentMatchId={matchId} size="sm" />
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-sm font-bold leading-tight text-foreground sm:text-base">
+                {team.teamName}
+              </h3>
+              <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">
+                {team.teamSName}
+              </p>
             </div>
-          );
-        })}
-      </div>
+            <div className="shrink-0 space-y-0.5 text-right">
+              {innings.length > 0 ? (
+                innings.map((inn, index) => (
+                  <p key={inn.inningsId} className="flex items-baseline justify-end gap-2">
+                    {innings.length > 1 && (
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Inn {index + 1}
+                      </span>
+                    )}
+                    <Score
+                      runs={inn.runs}
+                      wickets={inn.wickets}
+                      overs={inn.overs}
+                      className="text-base text-foreground sm:text-lg"
+                    />
+                  </p>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">Yet to bat</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -241,7 +192,6 @@ function MatchDetail() {
   const info = entry.match.matchInfo;
   const score = entry.match.matchScore;
   const isLive = LIVE_STATES.includes(info.state);
-  const isLimitedOvers = /^(odi|t20|t20i|one day|twenty20)$/i.test(info.matchFormat.trim());
 
   return (
     <main className="mx-auto max-w-4xl px-3 py-5 sm:px-6 sm:py-12 lg:px-8">
@@ -252,18 +202,18 @@ function MatchDetail() {
         <ArrowLeft className="h-4 w-4" /> Back to scoreboard
       </Link>
 
-      <header className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:mt-6 sm:p-6">
+      <header className="mt-3 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] sm:mt-6 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Trophy className="h-3 w-3" />
               <span className="truncate">{info.seriesName}</span>
             </div>
-            <h1 className="mt-1 text-2xl font-black text-foreground sm:text-3xl">
+            <h1 className="mt-1 text-xl font-black leading-tight text-foreground sm:text-3xl">
               {info.team1.teamName} <span className="text-muted-foreground">vs</span>{" "}
               {info.team2.teamName}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground sm:mt-1 sm:text-sm">
               {info.matchDesc} · {info.matchFormat}
             </p>
           </div>
@@ -291,31 +241,24 @@ function MatchDetail() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-4">
+        <div className="mt-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 p-3 sm:mt-5 sm:p-4">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <Activity className="h-3 w-3" /> Current Status
           </div>
-          <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">{info.status}</p>
+          <p className="mt-1 text-sm font-semibold leading-snug text-foreground sm:text-lg">{info.status}</p>
           {isLive && <BallDots balls={center?.recentBalls ?? []} />}
         </div>
       </header>
 
-      {isLimitedOvers ? (
-        <section className="mt-4 sm:mt-6">
-          <CombinedInningsCard
-            team1={info.team1}
-            team1Score={score?.team1Score}
-            team2={info.team2}
-            team2Score={score?.team2Score}
-            matchId={id}
-          />
-        </section>
-      ) : (
-        <section className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4">
-          <InningsCard team={info.team1} matchId={id} scores={score?.team1Score} />
-          <InningsCard team={info.team2} matchId={id} scores={score?.team2Score} />
-        </section>
-      )}
+      <section className="mt-3 sm:mt-6">
+        <ScoreboardCard
+          team1={info.team1}
+          team1Score={score?.team1Score}
+          team2={info.team2}
+          team2Score={score?.team2Score}
+          matchId={id}
+        />
+      </section>
 
       {centerLoading && !center ? (
         <div className="mt-6 space-y-6" aria-busy="true" aria-label="Loading match analytics">
