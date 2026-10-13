@@ -43,9 +43,10 @@ async function fetchHome(): Promise<CricketHomeResult> {
   try {
     const [carousel, full] = await Promise.allSettled([fetchCarousel(), fetchLiveScores()]);
     if (carousel.status === "rejected" && full.status === "rejected") throw carousel.reason;
+    // The live-scores page comes first because its order is Cricbuzz's ranking.
     const matches = mergeMatches(
-      carousel.status === "fulfilled" ? carousel.value : [],
       full.status === "fulfilled" ? full.value : [],
+      carousel.status === "fulfilled" ? carousel.value : [],
     );
     lastGood = { matches, fetchedAt: Date.now() };
     return { ...lastGood, error: null, stale: false };
