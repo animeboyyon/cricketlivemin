@@ -1,10 +1,44 @@
 import { describe, expect, it } from "vitest";
 import type { InningsScorecard, LiveSituation } from "@/types/scorecard";
 import {
+  alignProbability,
   estimateChaseProbability,
   normalizeCommentary,
+  parsePrediction,
   parseRecentBalls,
 } from "./scorecard.functions";
+
+describe("parsePrediction", () => {
+  const block = (id: number, t1: number, t2: number, draw: number) =>
+    `\\"winProbability\\":{\\"matchId\\":${id},\\"drawTiePercent\\":${draw},\\"drawPercent\\":${draw},\\"team1\\":{\\"id\\":11,\\"percent\\":${t1},\\"name\\":\\"South Africa\\"},\\"team2\\":{\\"id\\":4,\\"percent\\":${t2},\\"name\\":\\"Australia\\"},\\"odds\\":{\\"team1_point\\":2.8}}`;
+  const html = `<script>${block(111, 2, 73, 25)},${block(222, 34, 36, 30)}</script>`;
+
+  it("reads the exact match's percentages including the draw", () => {
+    expect(parsePrediction(html, 222)).toEqual({
+      team1: 34,
+      team2: 36,
+      draw: 30,
+      team1Id: 11,
+      team2Id: 4,
+    });
+  });
+
+  it("returns null for a match that has no prediction", () => {
+    expect(parsePrediction(html, 333)).toBeNull();
+  });
+});
+
+describe("alignProbability", () => {
+  it("swaps percentages when the prediction lists teams in the opposite order", () => {
+    const result = alignProbability({ team1: 34, team2: 36, draw: 30, team1Id: 11, team2Id: 4 }, 4, 11);
+    expect(result).toEqual({ team1: 36, team2: 34, draw: 30 });
+  });
+
+  it("keeps the order when it already matches", () => {
+    const result = alignProbability({ team1: 34, team2: 36, team1Id: 11, team2Id: 4 }, 11, 4);
+    expect(result).toEqual({ team1: 34, team2: 36 });
+  });
+});
 
 describe("parseRecentBalls", () => {
   it("keeps the last six deliveries and drops dot placeholders", () => {

@@ -247,37 +247,69 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
     });
     if (!res.ok) return null;
     const html = await res.text();
-    const escapedId = String(matchId).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    // Cricbuzz embeds this as serialized Next.js data, so the match id and
-    // percentages can be separated by escaped quotes and nested team objects.
-    const match = new RegExp(
-      `winProbability.{0,900}?[\\\\"']matchId[\\\\"'][^0-9]{0,20}${escapedId}.{0,1400}`,
-      "is",
-    ).exec(html)?.[0];
-    if (!match) return null;
-
-    const team1 = Number(
-      /[\\"']team1[\\"'][\s\S]{0,300}?[\\"']percent[\\"'][^0-9]{0,10}(\d{1,3}(?:\.\d+)?)/i.exec(
-        match,
-      )?.[1],
-    );
-    const team2 = Number(
-      /[\\"']team2[\\"'][\s\S]{0,300}?[\\"']percent[\\"'][^0-9]{0,10}(\d{1,3}(?:\.\d+)?)/i.exec(
-        match,
-      )?.[1],
-    );
-    if (![team1, team2].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) {
-      return null;
-    }
-    return { team1, team2 };
+    return parsePrediction(html, matchId);
   } catch {
     return null;
   }
 }
 
+// Cricbuzz embeds each match's figure as escaped JSON inside serialized
+// Next.js data, so we unescape and parse that exact object.
+export function parsePrediction(html: string, matchId: number): WinProbability | null {
+  const text = html.replace(/\\"/g, '"');
+  const key = '"winProbability":';
+  const start = text.indexOf(`${key}{"matchId":${matchId},`);
+  if (start < 0) return null;
+
+  const objectStart = start + key.length;
+  let depth = 0;
+  let objectEnd = -1;
+  for (let i = objectStart; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) {
+      objectEnd = i;
+      break;
+    }
+  }
+  if (objectEnd < 0) return null;
+
+  try {
+    const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
+    const team1 = Number(data.team1?.percent);
+    const team2 = Number(data.team2?.percent);
+    const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
+    const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
+    if (!valid(team1) || !valid(team2)) return null;
+    return {
+      team1,
+      team2,
+      draw: valid(draw) && draw > 0 ? draw : undefined,
+      team1Id: num(data.team1?.id),
+      team2Id: num(data.team2?.id),
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Cricbuzz's prediction page orders teams differently from the scorecard, so
+// put each percentage on the team it belongs to.
+export function alignProbability(
+  probability: WinProbability,
+  team1Id: number,
+  team2Id: number,
+): WinProbability {
+  const { team1Id: p1, team2Id: p2, ...rest } = probability;
+  if (p1 && p2 && p1 === team2Id && p2 === team1Id) {
+    return { ...rest, team1: probability.team2, team2: probability.team1 };
+  }
+  return rest;
+}
+
 export function estimateChaseProbability(
   innings: InningsScorecard[],
   live: LiveSituation | null,
+  team1Id?: number,
 ): WinProbability | null {
   if (!live?.target || live.inningsId <= 0) return null;
   const current = innings.find((entry) => entry.inningsId === live.inningsId);
@@ -298,7 +330,7 @@ export function estimateChaseProbability(
       58 - (pressure - 1) * 28 + wicketsRemaining * 1.8 + Math.min(ballsRemaining, 120) / 20,
     ),
   );
-  const battingTeamIsTeam1 = current.battingTeamId === (previous?.battingTeamId ?? 0);
+  const battingTeamIsTeam1 = current.battingTeamId === (team1Id || previous?.battingTeamId || 0);
   return battingTeamIsTeam1
     ? { team1: Math.round(chase), team2: Math.round(100 - chase), estimated: true }
     : { team1: Math.round(100 - chase), team2: Math.round(chase), estimated: true };
@@ -361,9 +393,15 @@ export const getMatchCenter = createServerFn({ method: "GET" })
               normalized.runsToWin ??
               (normalized.target && current ? Math.max(0, normalized.target - current.runs) : null),
           };
+          const team1Id = num(header.team1?.id);
+          const team2Id = num(header.team2?.id);
+          if (prediction) {
+            return { ...live, winProbability: alignProbability(prediction, team1Id, team2Id) };
+          }
           if (live.winProbability) return live;
-          if (prediction) return { ...live, winProbability: prediction };
-          return { ...live, winProbability: estimateChaseProbability(innings, live) };
+          // A chase estimate ignores draws, so it would mislead in a Test.
+          if (String(header.matchFormat).toUpperCase() === "TEST") return live;
+          return { ...live, winProbability: estimateChaseProbability(innings, live, team1Id) };
         })(),
         recentBalls: parseRecentBalls(comm?.miniscore?.recentOvsStats),
         commentary: normalizeCommentary(comm?.matchCommentary),
