@@ -160,11 +160,13 @@ function Index() {
       <header className="mb-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
-            <img
-              src="/og-image.png"
-              alt="Cricket Live"
-              className="h-9 w-28 object-contain object-left sm:h-11 sm:w-36"
-            />
+            <span className="flex h-11 w-52 items-center overflow-hidden sm:h-14 sm:w-64">
+              <img
+                src="/og-image.png"
+                alt="Cricket Live"
+                className="h-full w-auto max-w-none scale-[1.75] origin-left object-contain"
+              />
+            </span>
           </h1>
           <p className="mt-1 hidden max-w-xl text-sm text-muted-foreground sm:block">
             Real-time scores, fixtures, and results from across the cricketing world.
