@@ -398,10 +398,10 @@ export const getMatchCenter = createServerFn({ method: "GET" })
           if (prediction) {
             return { ...live, winProbability: alignProbability(prediction, team1Id, team2Id) };
           }
+          // Do not invent a probability from a heuristic. Cricbuzz's official
+          // figure is the only value safe to present as win probability.
           if (live.winProbability) return live;
-          // A chase estimate ignores draws, so it would mislead in a Test.
-          if (String(header.matchFormat).toUpperCase() === "TEST") return live;
-          return { ...live, winProbability: estimateChaseProbability(innings, live, team1Id) };
+          return { ...live, winProbability: null };
         })(),
         recentBalls: parseRecentBalls(comm?.miniscore?.recentOvsStats),
         commentary: normalizeCommentary(comm?.matchCommentary),

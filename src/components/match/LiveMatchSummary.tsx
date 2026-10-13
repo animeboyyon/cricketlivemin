@@ -167,7 +167,7 @@ export function LiveMatchSummary({
 
         <div>
           <SectionLabel>
-            {`Win probability${probability?.estimated ? " · est." : ""}`}
+            Win probability
           </SectionLabel>
           <WinProbabilityBar
             probability={probability}

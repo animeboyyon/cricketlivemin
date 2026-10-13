@@ -203,7 +203,6 @@ function MatchDetail() {
   const {
     data: center,
     isLoading: centerLoading,
-    isFetching: centerFetching,
   } = useQuery({
     queryKey: ["match-center", id],
     queryFn: () => getMatchCenter({ data: { matchId: id } }),
@@ -330,19 +329,7 @@ function MatchDetail() {
               >
                 <ListOrdered className="h-3.5 w-3.5" /> Scorecard
               </h2>
-              {isLive && (
-                <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <span
-                    className={
-                      centerFetching
-                        ? "h-1.5 w-1.5 animate-pulse rounded-full bg-primary"
-                        : "h-1.5 w-1.5 rounded-full bg-primary/50"
-                    }
-                    aria-hidden="true"
-                  />
-                  {centerFetching ? "Updating" : "Live"}
-                </span>
-              )}
+
             </div>
             <div className="mb-3">
               <MatchStats center={center} isLive={isLive} />

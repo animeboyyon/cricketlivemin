@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { Activity } from "lucide-react";
 import { getCricketHome } from "@/lib/cricket.functions";
 import { SeriesGroup } from "@/components/SeriesGroup";
 import { groupBySeries } from "@/lib/series";
-import { UpdatedAt } from "@/components/UpdatedAt";
 import type { MatchEntry } from "@/types/cricket";
 
 export const Route = createFileRoute("/")({
@@ -89,7 +87,7 @@ function matchPriority(match: MatchEntry) {
 }
 
 function Index() {
-  const { data, isLoading, error, dataUpdatedAt } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["cricket-home"],
     queryFn: () => getCricketHome(),
     refetchInterval: 5_000,
@@ -99,8 +97,6 @@ function Index() {
   const [seriesFilter, setSeriesFilter] = useState<number | null>(null);
 
   const matches = useMemo<MatchEntry[]>(() => data?.matches ?? [], [data?.matches]);
-  const fetchedAt = data?.fetchedAt ?? (dataUpdatedAt || null);
-  const isStale = Boolean(data?.stale) || Boolean(error && data);
 
   const counts = useMemo(() => {
     let live = 0,
@@ -164,14 +160,16 @@ function Index() {
       <header className="mb-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
-            <Activity className="h-5 w-5 text-primary sm:h-7 sm:w-7" aria-hidden="true" />
-            Cricket <span className="text-primary">Live</span>
+            <img
+              src="/og-image.png"
+              alt="Cricket Live"
+              className="h-9 w-28 object-contain object-left sm:h-11 sm:w-36"
+            />
           </h1>
           <p className="mt-1 hidden max-w-xl text-sm text-muted-foreground sm:block">
             Real-time scores, fixtures, and results from across the cricketing world.
           </p>
         </div>
-        {fetchedAt && <UpdatedAt timestamp={fetchedAt} stale={isStale} />}
       </header>
 
       <div className="sticky top-0 z-30 -mx-4 mb-3 bg-background/85 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
