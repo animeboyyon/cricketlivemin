@@ -7,6 +7,7 @@ interface RawMatch {
 
 const FLIGHT_PUSH = /self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g;
 const WRAPPER_KEY = '"seriesAdWrapper":';
+const TYPE_MATCHES_KEY = '"typeMatches":';
 
 /** Concatenate the decoded React Server Component chunks embedded in the page. */
 function readFlightData(html: string): string {
@@ -21,8 +22,8 @@ function readFlightData(html: string): string {
   return data;
 }
 
-/** Return the balanced `{...}` object starting at `start`, respecting strings. */
-function sliceObject(text: string, start: number): string | null {
+/** Return the balanced `{...}` or `[...]` value starting at `start`, respecting strings. */
+function sliceBalanced(text: string, start: number): string | null {
   let depth = 0;
   let inString = false;
   for (let i = start; i < text.length; i++) {
@@ -33,10 +34,66 @@ function sliceObject(text: string, start: number): string | null {
       continue;
     }
     if (ch === '"') inString = true;
-    else if (ch === "{") depth++;
-    else if (ch === "}" && --depth === 0) return text.slice(start, i + 1);
+    else if (ch === "{" || ch === "[") depth++;
+    else if ((ch === "}" || ch === "]") && --depth === 0) return text.slice(start, i + 1);
   }
   return null;
+}
+
+interface RawSeriesWrapper {
+  matches?: RawMatch[];
+}
+
+interface RawTypeMatches {
+  seriesMatches?: { seriesAdWrapper?: RawSeriesWrapper }[];
+}
+
+/**
+ * Series wrappers in Cricbuzz's own ranking: match type (International, League,
+ * Domestic, Women), then the order of series inside each type.
+ */
+function rankedWrappers(data: string): RawSeriesWrapper[] {
+  const wrappers: RawSeriesWrapper[] = [];
+  let from = 0;
+  for (;;) {
+    const at = data.indexOf(TYPE_MATCHES_KEY, from);
+    if (at === -1) break;
+    const start = at + TYPE_MATCHES_KEY.length;
+    const json = sliceBalanced(data, start);
+    from = start + (json?.length ?? 1);
+    if (!json) continue;
+    try {
+      for (const type of JSON.parse(json) as RawTypeMatches[]) {
+        for (const series of type.seriesMatches ?? []) {
+          if (series.seriesAdWrapper) wrappers.push(series.seriesAdWrapper);
+        }
+      }
+    } catch {
+      // Try the next occurrence of the block.
+    }
+    if (wrappers.length > 0) break;
+  }
+  return wrappers;
+}
+
+/** Every series wrapper found anywhere in the page, in page order. */
+function scatteredWrappers(data: string): RawSeriesWrapper[] {
+  const wrappers: RawSeriesWrapper[] = [];
+  let from = 0;
+  for (;;) {
+    const at = data.indexOf(WRAPPER_KEY, from);
+    if (at === -1) break;
+    const start = at + WRAPPER_KEY.length;
+    const json = sliceBalanced(data, start);
+    from = start + (json?.length ?? 1);
+    if (!json) continue;
+    try {
+      wrappers.push(JSON.parse(json) as RawSeriesWrapper);
+    } catch {
+      // Skip a wrapper we cannot parse and keep going.
+    }
+  }
+  return wrappers;
 }
 
 function toEntry(raw: RawMatch): MatchEntry | null {
@@ -54,31 +111,20 @@ function toEntry(raw: RawMatch): MatchEntry | null {
 }
 
 /**
- * Extract every match listed on cricbuzz.com/cricket-match/live-scores.
- * The page repeats its data several times, so results are de-duplicated by matchId.
+ * Extract every match listed on cricbuzz.com/cricket-match/live-scores, in the
+ * order Cricbuzz ranks them. The page repeats its data several times, so results
+ * are de-duplicated by matchId; wrappers outside the ranked block are appended last.
  */
 export function parseLiveScoresPage(html: string): MatchEntry[] {
   const data = readFlightData(html);
   const seen = new Map<number, MatchEntry>();
 
-  let from = 0;
-  for (;;) {
-    const at = data.indexOf(WRAPPER_KEY, from);
-    if (at === -1) break;
-    const start = at + WRAPPER_KEY.length;
-    const json = sliceObject(data, start);
-    from = start + (json?.length ?? 1);
-    if (!json) continue;
-    try {
-      const wrapper = JSON.parse(json) as { matches?: RawMatch[] };
-      for (const raw of wrapper.matches ?? []) {
-        const entry = toEntry(raw);
-        if (entry && !seen.has(entry.match.matchInfo.matchId)) {
-          seen.set(entry.match.matchInfo.matchId, entry);
-        }
+  for (const wrapper of [...rankedWrappers(data), ...scatteredWrappers(data)]) {
+    for (const raw of wrapper.matches ?? []) {
+      const entry = toEntry(raw);
+      if (entry && !seen.has(entry.match.matchInfo.matchId)) {
+        seen.set(entry.match.matchInfo.matchId, entry);
       }
-    } catch {
-      // Skip a wrapper we cannot parse and keep going.
     }
   }
   return [...seen.values()];

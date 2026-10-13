@@ -37,6 +37,23 @@ describe("parseLiveScoresPage", () => {
     expect(matches.map((m) => m.match.matchInfo.matchId)).toEqual([10, 11, 12, 13]);
   });
 
+  it("keeps Cricbuzz's ranking from typeMatches instead of page order", () => {
+    const wrapper = (id: number, ids: number[]) => ({
+      seriesAdWrapper: { seriesId: id, matches: ids.map(rawMatch) },
+    });
+    const html = pageWith({
+      carousel: [wrapper(9, [90])],
+      typeMatches: [
+        { matchType: "International", seriesMatches: [wrapper(1, [10, 11]), wrapper(2, [12])] },
+        { matchType: "League", seriesMatches: [wrapper(3, [13])] },
+      ],
+    });
+
+    const matches = parseLiveScoresPage(html);
+
+    expect(matches.map((m) => m.match.matchInfo.matchId)).toEqual([10, 11, 12, 13, 90]);
+  });
+
   it("converts string ids and dates to numbers", () => {
     const html = pageWith({ seriesAdWrapper: { matches: [rawMatch(10)] } });
     const { matchInfo } = parseLiveScoresPage(html)[0].match;

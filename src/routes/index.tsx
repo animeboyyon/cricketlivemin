@@ -43,49 +43,6 @@ const filterIdleClass: Record<Filter, string> = {
 
 const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"];
 
-// Keep marquee fixtures ahead of lower-profile matches when several matches share a state.
-// This is intentionally a transparent fallback until the feed exposes an official priority.
-const TEAM_PROFILE: Record<string, number> = {
-  Australia: 100,
-  England: 98,
-  India: 100,
-  "New Zealand": 94,
-  Pakistan: 93,
-  "South Africa": 96,
-  "Sri Lanka": 86,
-  "West Indies": 84,
-  Bangladesh: 78,
-  Afghanistan: 76,
-  Zimbabwe: 70,
-  Ireland: 68,
-  Netherlands: 65,
-  Scotland: 62,
-  Nepal: 58,
-  "United States": 55,
-  Canada: 52,
-  Namibia: 50,
-  Oman: 48,
-  UAE: 46,
-};
-
-const FORMAT_PROFILE: Record<string, number> = {
-  Test: 30,
-  ODI: 20,
-  T20: 10,
-  T20I: 10,
-};
-
-function matchPriority(match: MatchEntry) {
-  const { matchInfo } = match.match;
-  const teamScore = (teamName: string) => TEAM_PROFILE[teamName] ?? 40;
-  const formatScore =
-    Object.entries(FORMAT_PROFILE).find(([format]) =>
-      matchInfo.matchFormat.toUpperCase().includes(format.toUpperCase()),
-    )?.[1] ?? 0;
-
-  return teamScore(matchInfo.team1.teamName) + teamScore(matchInfo.team2.teamName) + formatScore;
-}
-
 function Index() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["cricket-home"],
@@ -112,7 +69,7 @@ function Index() {
   }, [matches]);
 
   const filtered = useMemo(() => {
-    const visibleMatches = matches.filter((m) => {
+    return matches.filter((m) => {
       const { state, seriesId } = m.match.matchInfo;
       if (seriesFilter !== null && seriesId !== seriesFilter) return false;
       if (filter === "live") return LIVE_STATES.includes(state);
@@ -120,26 +77,6 @@ function Index() {
       if (filter === "complete") return state === "Complete";
       return true;
     });
-
-    if (filter !== "all") return visibleMatches;
-
-    const categoryRank = (state: string) => {
-      if (LIVE_STATES.includes(state)) return 0;
-      if (state === "Preview" || state === "Upcoming") return 1;
-      if (state === "Complete") return 2;
-      return 3;
-    };
-
-    return visibleMatches
-      .map((match, index) => ({ match, index }))
-      .sort(
-        (a, b) =>
-          categoryRank(a.match.match.matchInfo.state) -
-            categoryRank(b.match.match.matchInfo.state) ||
-          matchPriority(b.match) - matchPriority(a.match) ||
-          a.index - b.index,
-      )
-      .map(({ match }) => match);
   }, [matches, filter, seriesFilter]);
 
   const groups = useMemo(() => groupBySeries(filtered), [filtered]);
