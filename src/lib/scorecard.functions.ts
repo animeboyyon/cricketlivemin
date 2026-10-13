@@ -226,7 +226,7 @@ export function normalizeCommentary(raw: unknown): CommentaryEntry[] {
 }
 
 async function fetchJson(url: string): Promise<Raw | null> {
-  const res = await fetch(url, { headers: HEADERS });
+  const res = await fetch(url, { headers: HEADERS, cache: "no-store" });
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) return null;
   return (await res.json()) as Raw;
 }
@@ -235,6 +235,7 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
   try {
     const res = await fetch("https://www.cricbuzz.com/live-cricket-match-predictions", {
       headers: { ...HEADERS, Accept: "text/html" },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const html = await res.text();
