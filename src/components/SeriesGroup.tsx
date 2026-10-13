@@ -11,24 +11,7 @@ export function SeriesGroup({ group }: { group: SeriesGroupData }) {
   const isSingleMatch = group.matches.length === 1;
 
   if (isSingleMatch) {
-    return (
-      <section aria-labelledby={headingId}>
-        <div
-          id={panelId}
-          className="overflow-hidden rounded-xl border border-border bg-card/40"
-        >
-          <h2
-            id={headingId}
-            className="border-b border-border/60 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-          >
-            {group.seriesName}
-          </h2>
-          <div className="p-2 sm:p-3">
-            <MatchCard entry={group.matches[0]} />
-          </div>
-        </div>
-      </section>
-    );
+    return <MatchCard entry={group.matches[0]} showSeriesTitle />;
   }
 
   return (
