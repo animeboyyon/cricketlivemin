@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Score } from "@/components/Score";
 import { cn } from "@/lib/utils";
+import { shortSeriesName } from "@/lib/series";
 import {
   LIVE_STATES,
   formatBadgeClass,
@@ -118,7 +119,10 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
           >
             {info.matchFormat}
           </span>
-          <span className="truncate">{info.matchDesc}</span>
+          <span className="truncate" title={info.seriesName}>
+            {info.matchDesc}
+            <span className="text-muted-foreground/70"> · {shortSeriesName(info.seriesName)}</span>
+          </span>
         </div>
         <StatusBadge state={info.state} />
       </header>

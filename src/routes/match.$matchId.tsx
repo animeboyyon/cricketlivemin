@@ -350,7 +350,6 @@ function MatchDetail() {
             <Scorecard
               innings={center.innings}
               team1Id={center.team1Id || info.team1.teamId}
-              liveInningsId={isLive ? center.live?.inningsId : undefined}
             />
           </section>
 

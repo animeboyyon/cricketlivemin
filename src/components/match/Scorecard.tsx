@@ -19,11 +19,9 @@ function inningsLabel(inn: InningsScorecard, all: InningsScorecard[]) {
 export function Scorecard({
   innings,
   team1Id,
-  liveInningsId,
 }: {
   innings: InningsScorecard[];
   team1Id: number;
-  liveInningsId?: number;
 }) {
   const latest = innings[innings.length - 1];
   const [view, setView] = useState<View>("batting");
@@ -58,11 +56,6 @@ export function Scorecard({
                   <span className="font-mono text-xs tabular-nums opacity-80">
                     {inn.runs}/{inn.wickets}
                   </span>
-                  {inn.inningsId === liveInningsId && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
-                      Live
-                    </span>
-                  )}
                 </TabsTrigger>
               );
             })}
