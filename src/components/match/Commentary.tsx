@@ -4,7 +4,7 @@ import type { CommentaryEntry } from "@/types/scorecard";
 
 const BADGE = {
   four: { label: "4", className: "bg-accent text-accent-foreground" },
-  six: { label: "6", className: "bg-primary text-primary-foreground" },
+  six: { label: "6", className: "bg-chart-5 text-primary-foreground" },
   wicket: { label: "W", className: "bg-destructive text-destructive-foreground" },
 } as const;
 
@@ -53,9 +53,9 @@ export function Commentary({ entries }: { entries: CommentaryEntry[] }) {
   return (
     <section
       aria-label="Ball-by-ball commentary"
-      className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6"
+      className="rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)] sm:p-4"
     >
-      <ul className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-3">
         {entries.map((entry) => (
           <Entry key={entry.id} entry={entry} />
         ))}
@@ -73,15 +73,15 @@ export function MatchTabs({
 }) {
   if (commentary.length === 0) return <>{children}</>;
   return (
-    <Tabs defaultValue="scorecard" className="mt-4 sm:mt-6">
+    <Tabs defaultValue="scorecard" className="mt-3 sm:mt-4">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
         <TabsTrigger value="commentary">Commentary</TabsTrigger>
       </TabsList>
-      <TabsContent value="scorecard" className="mt-4 sm:mt-6">
+      <TabsContent value="scorecard" className="mt-3 sm:mt-4">
         {children}
       </TabsContent>
-      <TabsContent value="commentary" className="mt-4 sm:mt-6">
+      <TabsContent value="commentary" className="mt-3 sm:mt-4">
         <Commentary entries={commentary} />
       </TabsContent>
     </Tabs>

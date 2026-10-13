@@ -74,7 +74,7 @@
   --secondary: oklch(0.27 0.04 260);
   --secondary-foreground: oklch(0.98 0.01 240);
   --muted: oklch(0.25 0.03 260);
-  --muted-foreground: oklch(0.72 0.03 250);
+  --muted-foreground: oklch(0.78 0.03 250);
   --accent: oklch(0.72 0.18 230);
   --accent-foreground: oklch(0.16 0.02 260);
   --destructive: oklch(0.65 0.25 25);
@@ -159,4 +159,30 @@
 
 .live-dot {
   animation: pulse-live 1.6s ease-in-out infinite;
+}
+
+@keyframes score-flash-runs {
+  0% { background-color: oklch(0.85 0.22 145 / 0.45); }
+  100% { background-color: transparent; }
+}
+
+@keyframes score-flash-wicket {
+  0% { background-color: oklch(0.65 0.25 25 / 0.55); }
+  100% { background-color: transparent; }
+}
+
+.score-flash-runs {
+  animation: score-flash-runs 1.4s ease-out;
+}
+
+.score-flash-wicket {
+  animation: score-flash-wicket 1.4s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .score-flash-runs,
+  .score-flash-wicket {
+    animation: none;
+  }
 }

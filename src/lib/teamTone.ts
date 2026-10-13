@@ -65,3 +65,54 @@ export const toneLabel: Partial<Record<TeamTone, string>> = {
   batting: "Batting",
   winner: "Won",
 };
+
+export function formatBadgeClass(format: string) {
+  const f = format.toUpperCase();
+  if (f.includes("TEST")) return "bg-chart-5/15 text-chart-5";
+  if (f.includes("ODI")) return "bg-chart-3/15 text-chart-3";
+  if (f.includes("T20") || f.includes("T10")) return "bg-accent/15 text-accent";
+  return "bg-muted text-muted-foreground";
+}
+
+export function stateAccentClass(state: string) {
+  if (LIVE_STATES.includes(state)) return "border-l-primary";
+  if (state === "Preview" || state === "Upcoming") return "border-l-chart-3";
+  if (state === "Complete") return "border-l-muted-foreground/40";
+  return "border-l-border";
+}
+
+export type StatusKind =
+  | "chase"
+  | "won"
+  | "lead"
+  | "trail"
+  | "toss"
+  | "draw"
+  | "live"
+  | "upcoming"
+  | "plain";
+
+export function getStatusKind(status: string, state: string): StatusKind {
+  const s = status.toLowerCase();
+  if (/toss|opt to|elected to/.test(s)) return "toss";
+  if (/\bneed|\brequire/.test(s)) return "chase";
+  if (/\bwon\b/.test(s)) return "won";
+  if (/\blead\b|\bleads\b/.test(s)) return "lead";
+  if (/\btrail/.test(s)) return "trail";
+  if (/draw|tied|no result|abandon/.test(s)) return "draw";
+  if (LIVE_STATES.includes(state)) return "live";
+  if (state === "Preview" || state === "Upcoming") return "upcoming";
+  return "plain";
+}
+
+export const statusClass: Record<StatusKind, string> = {
+  chase: "bg-chart-3/15 text-chart-3 ring-1 ring-chart-3/30",
+  won: "bg-primary/15 text-primary ring-1 ring-primary/30",
+  lead: "bg-accent/15 text-accent ring-1 ring-accent/30",
+  trail: "bg-chart-4/15 text-chart-4 ring-1 ring-chart-4/30",
+  toss: "bg-muted text-muted-foreground",
+  draw: "bg-chart-5/15 text-chart-5 ring-1 ring-chart-5/30",
+  live: "bg-primary/10 text-primary ring-1 ring-primary/25",
+  upcoming: "bg-chart-3/10 text-chart-3 ring-1 ring-chart-3/25",
+  plain: "bg-muted/50 text-foreground/90",
+};

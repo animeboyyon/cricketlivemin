@@ -5,7 +5,12 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { Score } from "@/components/Score";
 import { cn } from "@/lib/utils";
 import {
+  LIVE_STATES,
+  formatBadgeClass,
+  getStatusKind,
   getTeamTones,
+  stateAccentClass,
+  statusClass,
   toneLabel,
   toneRowClass,
   toneScoreClass,
@@ -14,38 +19,25 @@ import {
 
 type ScoreData = { runs: number; wickets?: number; overs?: number };
 
-function StatusBadge({ state, status }: { state: string; status: string }) {
-  const isLive = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"].includes(state);
-  const isComplete = state === "Complete";
-  const isUpcoming = state === "Preview" || state === "Upcoming";
+function StatusBadge({ state }: { state: string }) {
+  const base =
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider";
 
-  if (isLive) {
+  if (LIVE_STATES.includes(state)) {
     return (
-      <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-        <span className="live-dot h-2 w-2 rounded-full bg-primary" />
+      <div className={cn(base, "bg-primary/15 text-primary")}>
+        <span className="live-dot h-1.5 w-1.5 rounded-full bg-primary" />
         Live
       </div>
     );
   }
-  if (isComplete) {
-    return (
-      <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Result
-      </div>
-    );
+  if (state === "Complete") {
+    return <div className={cn(base, "bg-muted text-muted-foreground")}>Result</div>;
   }
-  if (isUpcoming) {
-    return (
-      <div className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
-        Upcoming
-      </div>
-    );
+  if (state === "Preview" || state === "Upcoming") {
+    return <div className={cn(base, "bg-chart-3/15 text-chart-3")}>Upcoming</div>;
   }
-  return (
-    <div className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-      {state}
-    </div>
-  );
+  return <div className={cn(base, "bg-muted text-muted-foreground")}>{state}</div>;
 }
 
 function TeamRow({
@@ -65,18 +57,21 @@ function TeamRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-xl px-2 py-1.5",
+        "flex items-center justify-between gap-2 rounded-lg px-1.5 py-1",
         toneRowClass[tone],
       )}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2">
         <TeamLogo name={name} short={short} imageId={imageId} size="sm" />
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold leading-tight text-foreground">{name}</div>
-          <div className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[10px] leading-tight text-muted-foreground">
             {short}
             {label && (
-              <span className="rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+              <span className="inline-flex items-center gap-1 rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                {tone === "batting" && (
+                  <span className="live-dot h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
+                )}
                 {label}
               </span>
             )}
@@ -85,7 +80,7 @@ function TeamRow({
       </div>
       <div className="shrink-0 text-right">
         {score ? (
-          <Score {...score} className={cn("text-base", toneScoreClass[tone])} />
+          <Score {...score} className={cn("text-[15px]", toneScoreClass[tone])} />
         ) : (
           <span className="text-muted-foreground/60">—</span>
         )}
@@ -101,24 +96,33 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
   const t1 = score?.team1Score?.inngs2 ?? score?.team1Score?.inngs1;
   const t2 = score?.team2Score?.inngs2 ?? score?.team2Score?.inngs1;
   const tones = getTeamTones(info, score);
-  const isLive = tones.team1 === "batting" || tones.team2 === "batting";
+  const kind = getStatusKind(info.status, info.state);
 
   return (
     <Link
       to="/match/$matchId"
       params={{ matchId: String(info.matchId) }}
-      className="group relative block overflow-hidden rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-glow)] sm:p-5"
+      className={cn(
+        "group relative block overflow-hidden rounded-xl border border-l-4 border-border bg-card p-2.5 shadow-[var(--shadow-card)] transition hover:border-primary/50 hover:shadow-[var(--shadow-glow)] sm:p-3.5",
+        stateAccentClass(info.state),
+      )}
     >
-      <header className="mb-2 flex items-start justify-between gap-3 sm:mb-3">
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-muted-foreground">
-            {info.matchDesc} · {info.matchFormat}
-          </div>
+      <header className="mb-1.5 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span
+            className={cn(
+              "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+              formatBadgeClass(info.matchFormat),
+            )}
+          >
+            {info.matchFormat}
+          </span>
+          <span className="truncate">{info.matchDesc}</span>
         </div>
-        <StatusBadge state={info.state} status={info.status} />
+        <StatusBadge state={info.state} />
       </header>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <TeamRow
           name={info.team1.teamName}
           short={info.team1.teamSName}
@@ -135,18 +139,18 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
         />
       </div>
 
-      <footer className="mt-2.5 space-y-1.5 sm:mt-3">
+      <footer className="mt-2 space-y-1">
         <p
           className={cn(
-            "text-[13px] font-medium leading-snug sm:text-sm",
-            isLive ? "text-primary" : "text-foreground/90",
+            "rounded-md px-2 py-1 text-xs font-semibold leading-snug sm:text-[13px]",
+            statusClass[kind],
           )}
         >
           {info.status}
         </p>
         {info.venueInfo && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0 text-chart-4" />
             <span className="truncate">
               {info.venueInfo.ground}, {info.venueInfo.city}
             </span>

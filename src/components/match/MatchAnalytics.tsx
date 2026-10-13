@@ -41,10 +41,11 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
         label: "Required RR",
         value: rrr != null ? rrr.toFixed(2) : "—",
         hint: rrr != null ? (rrr > crr ? "Above current rate" : "Within reach") : "Not chasing",
-        tone: rrr != null && rrr > crr ? "accent" : "default",
+        tone: rrr != null ? (rrr > crr ? "danger" : "accent") : "default",
       },
       {
         label: "Target",
+        tone: target != null ? "warning" : "default",
         value: target != null ? String(target) : "—",
         hint:
           target != null && runsNeeded != null && ballsLeft != null && isLive
@@ -55,6 +56,7 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
       },
       {
         label: "Projected",
+        tone: projected != null ? "violet" : "default",
         value: projected != null ? String(projected) : "—",
         hint:
           projected != null
@@ -92,11 +94,11 @@ export function MatchWorm({
   return (
     <section
       aria-labelledby="analytics-heading"
-      className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6"
+      className="rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-card)] sm:p-4"
     >
       <h2
         id="analytics-heading"
-        className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+        className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
       >
         <TrendingUp className="h-3.5 w-3.5 text-primary" /> Match worm
       </h2>
