@@ -63,7 +63,6 @@ export interface WinProbability {
   draw?: number;
   team1Id?: number;
   team2Id?: number;
-  estimated?: boolean;
 }
 
 export interface LiveSituation {

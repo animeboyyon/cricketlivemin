@@ -8,7 +8,7 @@ A minimal, dark-mode live cricket scoreboard. Live scores, scorecards, ball-by-b
 
 - **Home**: matches grouped by series, with one row of filter chips (live, upcoming, completed, series) and a small "updated" timestamp that turns amber when data is stale.
 - **Match page**: summary, scorecard and commentary tabs. The last six balls show as dots in the header, and a worm chart compares the innings.
-- **Win probability**: Cricbuzz's own figure when available. Otherwise an estimate for chases, marked with a muted "est." label.
+- **Win probability**: Cricbuzz's own live figure, read from the same match-centre feed that powers cricbuzz.com. Hidden when Cricbuzz has none.
 - **Team sheet**: tap a team logo to see its other results in the current feed.
 - **Bell and share**: a bell for score-change notifications on a match, and a share button backed by per-match link previews.
 
