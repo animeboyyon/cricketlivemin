@@ -8,6 +8,11 @@ export function SeriesGroup({ group }: { group: SeriesGroupData }) {
   const [open, setOpen] = useState(true);
   const headingId = `series-${group.seriesId}`;
   const panelId = `series-panel-${group.seriesId}`;
+  const isSingleMatch = group.matches.length === 1;
+
+  if (isSingleMatch) {
+    return <MatchCard entry={group.matches[0]} showSeriesTitle />;
+  }
 
   return (
     <section

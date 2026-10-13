@@ -92,7 +92,13 @@ function TeamRow({
   );
 }
 
-export function MatchCard({ entry }: { entry: MatchEntry }) {
+export function MatchCard({
+  entry,
+  showSeriesTitle = false,
+}: {
+  entry: MatchEntry;
+  showSeriesTitle?: boolean;
+}) {
   const info = entry.match.matchInfo;
   const score = entry.match.matchScore;
 
@@ -120,8 +126,10 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
             {info.matchFormat}
           </span>
           <span className="truncate" title={info.seriesName}>
-            {info.matchDesc}
-            <span className="text-muted-foreground/70"> · {shortSeriesName(info.seriesName)}</span>
+            {showSeriesTitle ? info.seriesName : info.matchDesc}
+            {!showSeriesTitle && (
+              <span className="text-muted-foreground/70"> · {shortSeriesName(info.seriesName)}</span>
+            )}
           </span>
         </div>
         <StatusBadge state={info.state} />
