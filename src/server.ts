@@ -90,6 +90,14 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Kept out of the route tree: route files are bundled for the browser, and the
+      // image renderer's wasm must stay server-only.
+      const ogMatch = new URL(request.url).pathname.match(/^\/api\/og\/([^/]+)$/);
+      if (ogMatch) {
+        const { renderMatchImage } = await import("./lib/og-image");
+        return withSecurityHeaders(await renderMatchImage(ogMatch[1]));
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

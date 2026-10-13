@@ -42,8 +42,10 @@ export const Route = createFileRoute("/match/$matchId")({
     if (origin) {
       meta.push(
         { property: "og:url", content: `${origin}/match/${params.matchId}` },
-        { property: "og:image", content: `${origin}/og-image.png` },
-        { name: "twitter:image", content: `${origin}/og-image.png` },
+        { property: "og:image", content: `${origin}/api/og/${params.matchId}` },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:image", content: `${origin}/api/og/${params.matchId}` },
       );
     }
     return { meta };
