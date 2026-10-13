@@ -162,7 +162,7 @@ function Index() {
           <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-foreground sm:text-4xl">
             <span className="flex h-[50px] w-80 items-center">
               <img
-                src="/og-image.png"
+                src="/cricket-live-header.png"
                 alt="Cricket Live"
                 className="h-full w-full object-contain object-left"
               />
