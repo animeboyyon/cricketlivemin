@@ -15,7 +15,7 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
     const ballsBowled = current.balls || oversToBalls(current.overs);
     const crr = live?.currentRunRate ?? current.runRate;
 
-    const isChase = maxOvers != null && innings.length >= 2;
+    const isChase = innings.length >= 2;
     const target = live?.target ?? (isChase ? innings[innings.length - 2].runs + 1 : null);
     const totalBalls = maxOvers != null ? Math.round(maxOvers * 6) : null;
     const ballsLeft = totalBalls != null ? Math.max(0, totalBalls - ballsBowled) : null;
@@ -39,7 +39,16 @@ export function MatchStats({ center, isLive }: { center: MatchCenter; isLive: bo
       },
     ];
 
-    if (maxOvers != null) {
+    if (maxOvers == null) {
+      if (target != null) {
+        stats.push({
+          label: "Target",
+          value: String(target),
+          hint: runsNeeded != null ? `Need ${runsNeeded} runs` : "Chase target",
+          tone: "default",
+        });
+      }
+    } else {
       stats.push(
         {
           label: "Required RR",
