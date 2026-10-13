@@ -132,19 +132,9 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
     }
     return null;
   };
-  const probability = mini.winProbability ?? mini.winProbabilities ?? mini.win_probability;
-  const team1Probability =
-    positive(probability?.team1 ?? probability?.team1Percentage) ??
-    positive(mini.team1WinProbability) ??
-    findNumber(mini, ["team1win", "team1percentage", "team1probability"]);
-  const team2Probability =
-    positive(probability?.team2 ?? probability?.team2Percentage) ??
-    positive(mini.team2WinProbability) ??
-    findNumber(mini, ["team2win", "team2percentage", "team2probability"]);
-  const winProbability =
-    team1Probability !== null && team2Probability !== null
-      ? { team1: team1Probability, team2: team2Probability }
-      : null;
+  // Cricbuzz's miniscore may expose a rapidly changing heuristic. Do not use it;
+  // the scorecard consumes the official prediction page value below instead.
+  const winProbability = null;
 
   return {
     inningsId: num(mini.inningsId),
@@ -157,6 +147,7 @@ function normalizeLive(mini: Raw | undefined): LiveSituation | null {
 }
 
 const MAX_COMMENTARY = 60;
+const lastOfficialProbability = new Map<number, WinProbability>();
 
 const stripMarkup = (text: unknown) =>
   String(text ?? "")
@@ -396,12 +387,16 @@ export const getMatchCenter = createServerFn({ method: "GET" })
           const team1Id = num(header.team1?.id);
           const team2Id = num(header.team2?.id);
           if (prediction) {
-            return { ...live, winProbability: alignProbability(prediction, team1Id, team2Id) };
+            const official = alignProbability(prediction, team1Id, team2Id);
+            lastOfficialProbability.set(matchId, official);
+            return { ...live, winProbability: official };
           }
-          // Do not invent a probability from a heuristic. Cricbuzz's official
-          // figure is the only value safe to present as win probability.
-          if (live.winProbability) return live;
-          return { ...live, winProbability: null };
+          // Keep the last official value through tea, lunch, stumps and innings
+          // breaks. Never replace it with a miniscore heuristic or an unavailable state.
+          return {
+            ...live,
+            winProbability: lastOfficialProbability.get(matchId) ?? null,
+          };
         })(),
         recentBalls: parseRecentBalls(comm?.miniscore?.recentOvsStats),
         commentary: normalizeCommentary(comm?.matchCommentary),

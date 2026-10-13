@@ -23,17 +23,7 @@ function WinProbabilityBar({
   team1Label: string;
   team2Label: string;
 }) {
-  if (!probability) {
-    return (
-      <>
-        <div className="h-2.5 rounded-full bg-muted" aria-hidden="true" />
-        <p className="mt-1.5 text-xs">{unavailable("Unavailable from live feed")}</p>
-        <p className="sr-only">
-          {team1Label} and {team2Label} win probabilities are unavailable from the live feed.
-        </p>
-      </>
-    );
-  }
+  if (!probability) return null;
 
   return (
     <>
@@ -84,8 +74,7 @@ export function LiveMatchSummary({
   const liveInnings = center.live?.inningsId
     ? center.innings.find((innings) => innings.inningsId === center.live?.inningsId)
     : undefined;
-  const playIsInProgress = center.state === "In Progress";
-  const hasLiveInnings = playIsInProgress && Boolean(liveInnings);
+  const hasLiveInnings = Boolean(liveInnings);
   const batters = liveInnings?.batters.filter((batter) => batter.isBatting).slice(0, 2) ?? [];
   const bowler = liveInnings?.bowlers.at(-1);
   const hasBowler = Boolean(bowler && (bowler.overs > 0 || bowler.runs > 0 || bowler.wickets > 0));
@@ -120,14 +109,17 @@ export function LiveMatchSummary({
                             : "min-w-0 truncate text-sm text-foreground"
                         }
                       >
-                        {index === 0 && <span aria-label="Striker">* </span>}
                         {batter.name}
+                        <span className="block text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                          Not out
+                        </span>
                       </span>
-                      <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-foreground">
+                      <span className={index === 0 ? "shrink-0 font-mono text-sm font-bold tabular-nums text-primary" : "shrink-0 font-mono text-sm font-bold tabular-nums text-foreground"}>
                         {batter.runs}{" "}
                         <span className="text-xs font-normal text-muted-foreground">
                           ({batter.balls})
                         </span>
+                        {index === 0 && <span className="ml-1 text-primary" aria-label="Striker">•</span>}
                       </span>
                     </div>
                   ))}
@@ -165,16 +157,16 @@ export function LiveMatchSummary({
           </div>
         )}
 
-        <div>
-          <SectionLabel>
-            Win probability
-          </SectionLabel>
-          <WinProbabilityBar
-            probability={probability}
-            team1Label={team1Label}
-            team2Label={team2Label}
-          />
-        </div>
+        {probability && (
+          <div>
+            <SectionLabel>Win probability</SectionLabel>
+            <WinProbabilityBar
+              probability={probability}
+              team1Label={team1Label}
+              team2Label={team2Label}
+            />
+          </div>
+        )}
       </div>
     </section>
   );
