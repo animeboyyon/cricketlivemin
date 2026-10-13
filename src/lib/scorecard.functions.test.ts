@@ -23,6 +23,15 @@ describe("parsePrediction", () => {
     });
   });
 
+  it("chooses the freshest duplicate record for the same match", () => {
+    const older = block(222, 34, 36, 30).replace(
+      "\\\"odds\\\":{\\\"team1_point\\\":2.8}",
+      "\\\"lastUpdatedOver\\\":10,\\\"odds\\\":{\\\"team1_point\\\":2.8}",
+    );
+    const newer = `\\\"winProbability\\\":{\\\"matchId\\\":222,\\\"drawPercent\\\":20,\\\"team1\\\":{\\\"id\\\":11,\\\"percent\\\":40},\\\"team2\\\":{\\\"id\\\":4,\\\"percent\\\":40},\\\"lastUpdatedOver\\\":20}`;
+    expect(parsePrediction(`${older}${newer}`, 222)).toMatchObject({ team1: 40, team2: 40, draw: 20 });
+  });
+
   it("returns null for a match that has no prediction", () => {
     expect(parsePrediction(html, 333)).toBeNull();
   });

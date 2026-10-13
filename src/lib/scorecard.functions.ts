@@ -233,10 +233,13 @@ async function fetchJson(url: string): Promise<Raw | null> {
 
 async function fetchPrediction(matchId: number): Promise<WinProbability | null> {
   try {
-    const res = await fetch("https://www.cricbuzz.com/live-cricket-match-predictions", {
-      headers: { ...HEADERS, Accept: "text/html" },
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `https://www.cricbuzz.com/live-cricket-match-predictions?ts=${Date.now()}`,
+      {
+        headers: { ...HEADERS, Accept: "text/html", "Cache-Control": "no-cache" },
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     const html = await res.text();
     return parsePrediction(html, matchId);
@@ -250,38 +253,52 @@ async function fetchPrediction(matchId: number): Promise<WinProbability | null> 
 export function parsePrediction(html: string, matchId: number): WinProbability | null {
   const text = html.replace(/\\"/g, '"');
   const key = '"winProbability":';
-  const start = text.indexOf(`${key}{"matchId":${matchId},`);
-  if (start < 0) return null;
+  const marker = `${key}{"matchId":${matchId},`;
+  const candidates: Array<{ probability: WinProbability; updatedOver: number }> = [];
+  let searchFrom = 0;
 
-  const objectStart = start + key.length;
-  let depth = 0;
-  let objectEnd = -1;
-  for (let i = objectStart; i < text.length; i++) {
-    if (text[i] === "{") depth++;
-    else if (text[i] === "}" && --depth === 0) {
-      objectEnd = i;
-      break;
+  while (true) {
+    const start = text.indexOf(marker, searchFrom);
+    if (start < 0) break;
+    const objectStart = start + key.length;
+    let depth = 0;
+    let objectEnd = -1;
+    for (let i = objectStart; i < text.length; i++) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}" && --depth === 0) {
+        objectEnd = i;
+        break;
+      }
     }
-  }
-  if (objectEnd < 0) return null;
+    if (objectEnd < 0) break;
 
-  try {
-    const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
-    const team1 = Number(data.team1?.percent);
-    const team2 = Number(data.team2?.percent);
-    const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
-    const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
-    if (!valid(team1) || !valid(team2)) return null;
-    return {
-      team1,
-      team2,
-      draw: valid(draw) && draw > 0 ? draw : undefined,
-      team1Id: num(data.team1?.id),
-      team2Id: num(data.team2?.id),
-    };
-  } catch {
-    return null;
+    try {
+      const data = JSON.parse(text.slice(objectStart, objectEnd + 1)) as Raw;
+      const team1 = Number(data.team1?.percent);
+      const team2 = Number(data.team2?.percent);
+      const draw = Number(data.drawPercent ?? data.drawTiePercent ?? 0);
+      const valid = (value: number) => Number.isFinite(value) && value >= 0 && value <= 100;
+      if (valid(team1) && valid(team2)) {
+        candidates.push({
+          probability: {
+            team1,
+            team2,
+            draw: valid(draw) && draw > 0 ? draw : undefined,
+            team1Id: num(data.team1?.id),
+            team2Id: num(data.team2?.id),
+          },
+          updatedOver: Number(data.lastUpdatedOver) || -1,
+        });
+      }
+    } catch {
+      // Ignore malformed serialized records and continue scanning the payload.
+    }
+    searchFrom = objectEnd + 1;
   }
+
+  return candidates
+    .sort((a, b) => b.updatedOver - a.updatedOver)
+    .at(0)?.probability ?? null;
 }
 
 // Cricbuzz's prediction page orders teams differently from the scorecard, so
