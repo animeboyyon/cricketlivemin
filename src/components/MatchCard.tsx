@@ -3,6 +3,14 @@ import { Link } from "@tanstack/react-router";
 import { MapPin } from "lucide-react";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Score } from "@/components/Score";
+import { cn } from "@/lib/utils";
+import {
+  getTeamTones,
+  toneLabel,
+  toneRowClass,
+  toneScoreClass,
+  type TeamTone,
+} from "@/lib/teamTone";
 
 type ScoreData = { runs: number; wickets?: number; overs?: number };
 
@@ -45,26 +53,39 @@ function TeamRow({
   short,
   score,
   imageId,
-  isBatting,
+  tone,
 }: {
   name: string;
   short: string;
   score?: ScoreData;
   imageId?: number;
-  isBatting?: boolean;
+  tone: TeamTone;
 }) {
+  const label = toneLabel[tone];
   return (
-    <div className="flex items-center justify-between gap-3 py-1">
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-xl px-2 py-1.5",
+        toneRowClass[tone],
+      )}
+    >
       <div className="flex min-w-0 items-center gap-2.5">
         <TeamLogo name={name} short={short} imageId={imageId} size="sm" />
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold leading-tight text-foreground">{name}</div>
-          <div className="text-[11px] leading-tight text-muted-foreground">{short}</div>
+          <div className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground">
+            {short}
+            {label && (
+              <span className="rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                {label}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="shrink-0 text-right">
         {score ? (
-          <Score {...score} className="text-base text-foreground" />
+          <Score {...score} className={cn("text-base", toneScoreClass[tone])} />
         ) : (
           <span className="text-muted-foreground/60">—</span>
         )}
@@ -79,6 +100,8 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
 
   const t1 = score?.team1Score?.inngs2 ?? score?.team1Score?.inngs1;
   const t2 = score?.team2Score?.inngs2 ?? score?.team2Score?.inngs1;
+  const tones = getTeamTones(info, score);
+  const isLive = tones.team1 === "batting" || tones.team2 === "batting";
 
   return (
     <Link
@@ -95,24 +118,30 @@ export function MatchCard({ entry }: { entry: MatchEntry }) {
         <StatusBadge state={info.state} status={info.status} />
       </header>
 
-      <div>
+      <div className="space-y-1.5">
         <TeamRow
           name={info.team1.teamName}
           short={info.team1.teamSName}
           score={t1}
           imageId={info.team1.imageId}
+          tone={tones.team1}
         />
-        <div className="h-px bg-border/50" />
         <TeamRow
           name={info.team2.teamName}
           short={info.team2.teamSName}
           score={t2}
           imageId={info.team2.imageId}
+          tone={tones.team2}
         />
       </div>
 
       <footer className="mt-2.5 space-y-1.5 sm:mt-3">
-        <p className="text-[13px] font-medium leading-snug text-foreground/90 sm:text-sm">
+        <p
+          className={cn(
+            "text-[13px] font-medium leading-snug sm:text-sm",
+            isLive ? "text-primary" : "text-foreground/90",
+          )}
+        >
           {info.status}
         </p>
         {info.venueInfo && (

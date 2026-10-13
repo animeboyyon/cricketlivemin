@@ -13,6 +13,15 @@ import { Scorecard } from "@/components/match/Scorecard";
 import { ShareButton } from "@/components/match/ShareButton";
 import { TeamSheet } from "@/components/match/TeamSheet";
 import { Score } from "@/components/Score";
+import { cn } from "@/lib/utils";
+import {
+  LIVE_STATES,
+  getTeamTones,
+  toneLabel,
+  toneRowClass,
+  toneScoreClass,
+  type TeamTone,
+} from "@/lib/teamTone";
 import type { MatchEntry, Innings, Team, TeamScore } from "@/types/cricket";
 
 export const Route = createFileRoute("/match/$matchId")({
@@ -80,7 +89,6 @@ export const Route = createFileRoute("/match/$matchId")({
   ),
 });
 
-const LIVE_STATES = ["In Progress", "Innings Break", "Live", "Tea", "Lunch", "Stumps"];
 // Polling pauses automatically while the tab is hidden (react-query default).
 const LIVE_REFRESH_MS = 5_000;
 const IDLE_REFRESH_MS = 120_000;
@@ -91,31 +99,45 @@ function ScoreboardCard({
   team2,
   team2Score,
   matchId,
+  tones,
 }: {
   team1: Team;
   team1Score?: TeamScore;
   team2: Team;
   team2Score?: TeamScore;
   matchId: number;
+  tones: Record<"team1" | "team2", TeamTone>;
 }) {
   const rows = [
-    { team: team1, score: team1Score },
-    { team: team2, score: team2Score },
+    { team: team1, score: team1Score, tone: tones.team1 },
+    { team: team2, score: team2Score, tone: tones.team2 },
   ];
 
   return (
-    <div className="divide-y divide-border/60 rounded-2xl border border-border bg-card px-3 shadow-[var(--shadow-card)] sm:px-5">
-      {rows.map(({ team, score }) => {
+    <div className="space-y-2 rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-card)] sm:p-3">
+      {rows.map(({ team, score, tone }) => {
         const innings = [score?.inngs1, score?.inngs2].filter(Boolean) as Innings[];
+        const label = toneLabel[tone];
         return (
-          <div key={team.teamSName} className="flex items-center gap-3 py-3 sm:py-4">
+          <div
+            key={team.teamSName}
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-2.5 py-2.5 sm:px-3 sm:py-3",
+              toneRowClass[tone],
+            )}
+          >
             <TeamSheet team={team} currentMatchId={matchId} size="sm" />
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-sm font-bold leading-tight text-foreground sm:text-base">
                 {team.teamName}
               </h3>
-              <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">
+              <p className="flex items-center gap-1.5 text-[11px] leading-tight text-muted-foreground sm:text-xs">
                 {team.teamSName}
+                {label && (
+                  <span className="rounded bg-primary/20 px-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                    {label}
+                  </span>
+                )}
               </p>
             </div>
             <div className="shrink-0 space-y-0.5 text-right">
@@ -131,7 +153,11 @@ function ScoreboardCard({
                       runs={inn.runs}
                       wickets={inn.wickets}
                       overs={inn.overs}
-                      className="text-base text-foreground sm:text-lg"
+                      className={cn(
+                        "text-base sm:text-lg",
+                        // Only the latest innings takes the highlight colour; earlier ones stay neutral.
+                        index === innings.length - 1 ? toneScoreClass[tone] : "text-foreground/80",
+                      )}
                     />
                   </p>
                 ))
@@ -257,6 +283,7 @@ function MatchDetail() {
           team2={info.team2}
           team2Score={score?.team2Score}
           matchId={id}
+          tones={getTeamTones(info, score)}
         />
       </section>
 
