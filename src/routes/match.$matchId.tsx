@@ -250,6 +250,7 @@ function MatchDetail() {
         </Link>
         <div className="flex items-center gap-1.5">
           <NotifyButton
+            matchId={Number(matchId)}
             matchLabel={`${info.team1.teamSName} v ${info.team2.teamSName}`}
             state={info.state}
             status={info.status}

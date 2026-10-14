@@ -92,7 +92,18 @@ export default {
     try {
       // Kept out of the route tree: route files are bundled for the browser, and the
       // image renderer's wasm must stay server-only.
-      const ogMatch = new URL(request.url).pathname.match(/^\/api\/og\/([^/]+)$/);
+      const requestUrl = new URL(request.url);
+      const pushPath = requestUrl.pathname;
+      if (pushPath.startsWith("/api/push/")) {
+        const { handlePushRequest } = await import("./lib/push.server");
+        const pushResponse = await handlePushRequest(request, pushPath);
+        if (pushResponse) return withSecurityHeaders(pushResponse);
+      }
+      if (pushPath === "/sw.js") {
+        const { pushServiceWorker } = await import("./lib/push.server");
+        return withSecurityHeaders(new Response(pushServiceWorker(), { headers: { "content-type": "application/javascript; charset=utf-8", "cache-control": "no-cache" } }));
+      }
+      const ogMatch = pushPath.match(/^\/api\/og\/([^/]+)$/);
       if (ogMatch) {
         const { renderMatchImage } = await import("./lib/og-image");
         return withSecurityHeaders(await renderMatchImage(ogMatch[1]));
