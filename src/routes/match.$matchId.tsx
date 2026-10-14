@@ -254,7 +254,6 @@ function MatchDetail() {
             matchLabel={`${info.team1.teamSName} v ${info.team2.teamSName}`}
             state={info.state}
             status={info.status}
-            center={center}
           />
           <ShareButton
             title={`${info.team1.teamSName} vs ${info.team2.teamSName}`}
