@@ -219,7 +219,7 @@ function BatterTableRow({ b }: { b: BatterRow }) {
       <td className={cn(td, b.fours > 0 ? "font-semibold text-accent" : "text-muted-foreground")}>
         {b.fours}
       </td>
-      <td className={cn(td, b.sixes > 0 ? "font-semibold text-chart-5" : "text-muted-foreground")}>
+      <td className={cn(td, b.sixes > 0 ? "font-semibold text-primary" : "text-muted-foreground")}>
         {b.sixes}
       </td>
       <td className={cn(td, "pr-0 text-foreground sm:pr-0")}>{b.strikeRate.toFixed(1)}</td>

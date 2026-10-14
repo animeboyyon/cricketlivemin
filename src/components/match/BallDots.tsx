@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 const toneFor = (ball: string) => {
   const token = ball.toLowerCase();
   if (token === "w") return "bg-destructive text-destructive-foreground";
-  if (token === "6") return "bg-chart-5 text-primary-foreground";
+  if (token === "6") return "bg-primary text-primary-foreground";
   if (token === "4") return "bg-accent text-accent-foreground";
   if (token === "0") return "bg-muted text-muted-foreground";
   if (/^(wd|nb|lb|b)/.test(token)) return "bg-chart-3/20 text-chart-3 ring-1 ring-chart-3/40";
