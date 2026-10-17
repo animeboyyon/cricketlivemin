@@ -4,7 +4,7 @@ import type { CommentaryEntry } from "@/types/scorecard";
 
 const BADGE = {
   four: { label: "4", className: "bg-accent text-accent-foreground" },
-  six: { label: "6", className: "bg-primary text-primary-foreground" },
+  six: { label: "6", className: "bg-six text-six-foreground" },
   wicket: { label: "W", className: "bg-destructive text-destructive-foreground" },
 } as const;
 
